@@ -1,8 +1,8 @@
 <?php
 session_start();
 $login = isset($_SESSION['user']);
-if (empty($login)) {
-    header("location : index.php");
+if (!$login) {
+    header("location: index.php");
     exit();
 }
 ?>
