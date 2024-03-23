@@ -1,11 +1,13 @@
 <?php
 session_start();
 $login = isset($_SESSION['user']);
+
 if (!$login) {
     header("location: index.php");
     exit();
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -18,12 +20,12 @@ if (!$login) {
 
 <body>
     <div class="container" style="max-width: 800px;">
-        <h3 class="my-4">Profile</h3>
+        <h1 class="h3 my-3">Profile</h1>
         <ul class="list-group mb-3">
             <li class="list-group-item">Name: Alice</li>
             <li class="list-group-item">Email: alice@gmail.com</li>
-            <li class="list-group-item">Phone: 324524</li>
-            <li class="list-group-item">Address: Address</li>
+            <li class="list-group-item">Phone: 2378427</li>
+            <li class="list-group-item">Address: Some Address</li>
         </ul>
         <a href="_actions/logout.php" class="text-danger">Logout</a>
     </div>
