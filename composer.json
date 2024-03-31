@@ -1,0 +1,12 @@
+{
+    "require": {
+        "fakerphp/faker": "^1.23",
+        "nesbot/carbon": "^3.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Helpers\\": "_classes/Helpers",
+            "Libs\\" : "_classes/Libs"
+        }
+    }
+}
