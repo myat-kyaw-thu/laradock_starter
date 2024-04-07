@@ -4,8 +4,13 @@ namespace Helpers;
 
 class HTTP
 {
-    static function redirect()
+    static $project = "http://localhost/project_new_class";
+
+    static function redirect($page, $q="")
     {
-        echo "HTTP <br/>  <br/>";
+        $url = static::$project . $page;
+        if($q) $url .= "?$q";
+      header("location: $url");
+      exit();
     }
 }
