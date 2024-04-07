@@ -8,7 +8,13 @@ use Libs\Database\MySQL;
 use Faker\Factory as Faker;
 
 $mysql = new MySQL;
-$db = $mysql->connect();
+$table = new UsersTable($mysql);
 
-$result = $db->query("SELECT * FROM roles");
-print_r($result->fetchAll());
+$id = $table->insert([
+    "name" => "Alice",
+    "email" => "alice@gmail.com",
+    "phone" => "3453345",
+    "address" => "Some Address",
+    "password" => "password",
+]);
+echo $id;
