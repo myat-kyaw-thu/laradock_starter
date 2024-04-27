@@ -11,6 +11,14 @@ class UsersTable
     {
         $this->db = $mysql->connect();
     }
+    
+    public function find($email , $password){
+        $statement = $this->db->prepare("SELECT * FROM users WHERE email=:email AND password=:password");
+        $statement->execute(["email" => $email , "password" => $password]);
+        $user = $statement->fetch();
+        return $user;
+    }
+
     public function insert($data)
     {
         try {
