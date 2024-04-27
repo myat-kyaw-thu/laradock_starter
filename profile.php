@@ -1,11 +1,7 @@
 <?php
-session_start();
-$login = isset($_SESSION['user']);
-
-if (!$login) {
-    header("location: index.php");
-    exit();
-}
+include("./vendor/autoload.php");
+use Helpers\Auth;
+$user = Auth::check();
 ?>
 
 <!DOCTYPE html>
@@ -22,21 +18,22 @@ if (!$login) {
     <div class="container" style="max-width: 800px;">
         <h1 class="h3 my-3">Profile</h1>
 
-        <?php if (file_exists("_actions/photos/profile.jpg")) : ?>
-            <img src="_actions/photos/profile.jpg" width="300" class="img-thumbnail rounded-2">
+        <?php if ($user->photo): ?>
+            <img src="./_actions/photos/<?=$user->photo?>"class="img-thumbnail rounded-2" style="width: 250px; height: 250px">
+
+            <?php else : ?>
+                <img src="./_actions/photos/profile.jpg" style="width: 250px; height: 250px" class="img-thumbnail rounded-2">
         <?php endif ?>
-        <?php if ($_POST['error']) : ?>
-            <div class="alert alert-danger">Wrong Image Type</div>
-        <?php endif ?>
+       
         <form action="_actions/upload.php" method="post" enctype="multipart/form-data" class="input-group my-4">
             <input type="file" class="form-control" name="photo">
             <button class="btn btn-secondary">Upload</button>
         </form>
         <ul class="list-group mb-3">
-            <li class="list-group-item">Name: Alice</li>
-            <li class="list-group-item">Email: alice@gmail.com</li>
-            <li class="list-group-item">Phone: 2378427</li>
-            <li class="list-group-item">Address: Some Address</li>
+            <li class="list-group-item">Name: <?=$user->name ?></li>
+            <li class="list-group-item">Email: <?=$user->email ?></li>
+            <li class="list-group-item">Phone: <?=$user->phone ?></li>
+            <li class="list-group-item">Address: <?=$user->address ?></li>
         </ul>
         <a href="_actions/logout.php" class="text-danger">Logout</a>
     </div>
