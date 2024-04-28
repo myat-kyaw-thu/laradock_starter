@@ -11,6 +11,19 @@ class UsersTable
     {
         $this->db = $mysql->connect();
     }
+
+    public function getAll(){
+        $statement = $this->db->query(
+            "SELECT users.* , roles.name AS role FROM users LEFT JOIN roles ON users.role_id = roles.id"
+        );
+        return $statement->fetchAll();
+    }
+    public function getRoles(){
+        $statement = $this->db->query(
+            "SELECT * FROM roles"
+        );
+        return $statement->fetchAll();
+    }
     
     public function find($email , $password){
         $statement = $this->db->prepare("SELECT * FROM users WHERE email=:email AND password=:password");
@@ -37,6 +50,12 @@ class UsersTable
     public function updatePhoto($id , $photo) {
         $statement = $this->db->prepare("UPDATE users SET photo=:photo WHERE id=:id");
         $statement->execute(['id' => $id , 'photo' => $photo]);
+        return $statement->rowCount();
+    }
+    public function delete($id)
+    {
+        $statement = $this->db->prepare("DELETE FROM users WHERE id=:id");
+        $statement->execute(['id' => $id]);
         return $statement->rowCount();
     }
 }
