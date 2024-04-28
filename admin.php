@@ -65,7 +65,7 @@ $roles = $table->getRoles();
                             <a href="£" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">Role</a>
                                 <div class="dropdown-menu dropdown-menu-dark">
                                     <?php foreach($roles as $role) : ?>
-                                        <a href="_actions/role.php?id<?=$user->id?>&role=<?=$role->id?>" class="dropdown-item"><?=$role->name?></a>
+                                        <a href="_actions/role.php?id=<?=$user->id?>&role=<?=$role->id?>" class="dropdown-item"><?=$role->name?></a>
                                         <?php endforeach?>
                                 </div>
                         </div>
