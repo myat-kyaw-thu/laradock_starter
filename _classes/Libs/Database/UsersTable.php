@@ -58,4 +58,9 @@ class UsersTable
         $statement->execute(['id' => $id]);
         return $statement->rowCount();
     }
+    public function changeRole($id, $role){
+        $statement = $this->db->prepare('UPDATE users SET role_id=:role_id WHERE id=:id');
+        $statement->execute(['id' =>$id, 'role_id' => $role]);
+        return $statement->rowCount();
+    }
 }

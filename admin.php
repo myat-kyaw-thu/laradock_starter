@@ -4,6 +4,7 @@ use Libs\Database\MySQL;
 use Libs\Database\UsersTable;
 $table = new UsersTable(new MySQL);
 $users = $table->getAll();
+$roles = $table->getRoles();
 ?>
 
 <!DOCTYPE html>
@@ -13,6 +14,7 @@ $users = $table->getAll();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin</title>
     <link rel="stylesheet" href="css/bootstrap.min.css">
+    <script src="css/bootstrap.bundle.min.js" defer></script>
 </head>
 <body>
     <nav class="navbar bg-dark navbar-dark navbar-expand">
@@ -58,7 +60,16 @@ $users = $table->getAll();
                             <a href="_actions/delete.php?id=<?=$user->id?>" class="btn btn-sm btn-outline-danger">Delete</a>
                         </div>
                     </td>
-                    <td></td>
+                    <td>
+                        <div class="btn-group dropdown">
+                            <a href="£" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">Role</a>
+                                <div class="dropdown-menu dropdown-menu-dark">
+                                    <?php foreach($roles as $role) : ?>
+                                        <a href="_actions/role.php?id<?=$user->id?>&role=<?=$role->id?>" class="dropdown-item"><?=$role->name?></a>
+                                        <?php endforeach?>
+                                </div>
+                        </div>
+                    </td>
                 </tr>
             <?php endforeach ?>
         </table>
