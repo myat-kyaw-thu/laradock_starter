@@ -30,8 +30,9 @@ $roles = $table->getRoles();
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Role</th>
-                <th></th>
-                <th></th>
+                <th>Delete</th>
+                <th>Change Role</th>
+                <th>Ban</th>
             </tr>
             <?php foreach($users as $user) : ?>
                 <tr>
@@ -67,9 +68,18 @@ $roles = $table->getRoles();
                                     <?php foreach($roles as $role) : ?>
                                         <a href="_actions/role.php?id=<?=$user->id?>&role=<?=$role->id?>" class="dropdown-item"><?=$role->name?></a>
                                         <?php endforeach?>
-                                </div>
-                        </div>
-                    </td>
+                                        <?php if ($user->role_id !== 3) : ?>
+                                        </div>
+                                        <?php endif ?>
+                                    </div>
+                                </td>
+                                <td>
+                                    <?php if ($user->suspended) : ?>
+                                        <a href="_actions/unsuspend.php?id=<?= $user->id ?>" class="btn  btn-warning">UnBan</a>
+                                        <?php else : ?>
+                                            <a href="_actions/suspend.php?id=<?= $user->id ?>" class="btn btn-outline-warning">Ban</a>
+                                            <?php endif ?>
+                                        </td>
                 </tr>
             <?php endforeach ?>
         </table>

@@ -63,4 +63,14 @@ class UsersTable
         $statement->execute(['id' =>$id, 'role_id' => $role_id]);
         return $statement->rowCount();
     }
+    public function suspend($id){
+        $statement = $this->db->prepare("UPDATE users SET suspended=1 WHERE id=:id");
+        $statement->execute(["id" => $id]);
+        return $statement->rowCount();
+    }
+    public function unsuspend($id){
+        $statement = $this->db->prepare("UPDATE users SET suspended=0 WHERE id=:id");
+        $statement->execute(["id" => $id]);
+        return $statement->rowCount();
+    }
 }
