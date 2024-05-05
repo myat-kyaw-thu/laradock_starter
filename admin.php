@@ -2,7 +2,9 @@
 include("vendor/autoload.php");
 use Libs\Database\MySQL;
 use Libs\Database\UsersTable;
+use Helpers\Auth;
 $table = new UsersTable(new MySQL);
+$auth = Auth::check();
 $users = $table->getAll();
 $roles = $table->getRoles();
 ?>
@@ -20,7 +22,16 @@ $roles = $table->getRoles();
     <nav class="navbar bg-dark navbar-dark navbar-expand">
         <div class="container">
             <a href="#" class="navbar-brand">Admin</a>
+    <ul>
+        <li>
+            <a href="#" class="navbar-brand"><?= $auth->name?></a>
+        </li>
+        <li>
+            <a href="_actions/logout.php" class="text-danger">Logout</a>
+        </li>
+    </ul>
         </div>
+        
     </nav>
     <div class="container mt-4">
         <table class="table table-dark table-striped table-bordered">
@@ -68,18 +79,22 @@ $roles = $table->getRoles();
                                     <?php foreach($roles as $role) : ?>
                                         <a href="_actions/role.php?id=<?=$user->id?>&role=<?=$role->id?>" class="dropdown-item"><?=$role->name?></a>
                                         <?php endforeach?>
-                                        <?php if ($user->role_id !== 3) : ?>
                                         </div>
-                                        <?php endif ?>
+                                       
                                     </div>
                                 </td>
                                 <td>
-                                    <?php if ($user->suspended) : ?>
-                                        <a href="_actions/unsuspend.php?id=<?= $user->id ?>" class="btn  btn-warning">UnBan</a>
+                                    <?php if ($auth->role_id == 3) : ?>
+                                        <?php if($user->suspended):?>
+                                            <a href="_actions/unsuspend.php?id=<?= $user->id ?>" class="btn  btn-warning">UnBan</a>
+                                            <?php else : ?>
+                                                <a href="_actions/suspend.php?id=<?= $user->id ?>" class="btn btn-outline-warning">Ban</a>
+                                     <?php endif?>
                                         <?php else : ?>
-                                            <a href="_actions/suspend.php?id=<?= $user->id ?>" class="btn btn-outline-warning">Ban</a>
+
                                             <?php endif ?>
                                         </td>
+                                       
                 </tr>
             <?php endforeach ?>
         </table>
