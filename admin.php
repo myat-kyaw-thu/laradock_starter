@@ -68,11 +68,18 @@ $roles = $table->getRoles();
                 <?php endif ?>
                 </td>
                     <td>
+                    <?php if($auth->role_id == 3) :?>
                         <div class="btn-group">
                             <a href="_actions/delete.php?id=<?=$user->id?>" class="btn btn-sm btn-outline-danger">Delete</a>
                         </div>
+                        <?php else : ?>
+                                        <div>
+
+                                        </div>
+                                        <?php endif?>
                     </td>
                     <td>
+                        <?php if($auth->role_id == 3) :?>
                         <div class="btn-group dropdown">
                             <a href="£" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">Role</a>
                                 <div class="dropdown-menu dropdown-menu-dark">
@@ -80,8 +87,12 @@ $roles = $table->getRoles();
                                         <a href="_actions/role.php?id=<?=$user->id?>&role=<?=$role->id?>" class="dropdown-item"><?=$role->name?></a>
                                         <?php endforeach?>
                                         </div>
-                                       
                                     </div>
+                                    <?php else : ?>
+                                        <div>
+
+                                        </div>
+                                        <?php endif?>
                                 </td>
                                 <td>
                                     <?php if ($auth->role_id == 3) : ?>

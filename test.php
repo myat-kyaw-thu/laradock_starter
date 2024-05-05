@@ -24,3 +24,6 @@ $faker = Faker::create();
 // }
 
 // echo "Done..<br>";
+
+// strip_tags() (php function)
+// htmlspecialchars() (php function)
