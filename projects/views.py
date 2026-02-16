@@ -1,3 +1,9 @@
 from django.shortcuts import render
 
-# Create your views here.
+from django.http import HttpResponse
+
+def getHomePage(request):
+    return HttpResponse("Hello World")
+
+def getProject(request, id):
+    return HttpResponse(f"Hello Proejct {id}")
