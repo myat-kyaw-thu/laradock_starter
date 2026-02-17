@@ -1,3 +1,6 @@
-{% include 'nav-bar.html'%} {% block content %} {% endblock content%}
-<h1>Project Detail</h1>
-<p>This is a single project page.</p>
+{% extends 'main.html' %} {% block content %}
+<h1>{{ project.name }}</h1>
+<p>ID: {{ project.id }}</p>
+<p>Description: {{ project.description }}</p>
+<a href="{% url 'projects' %}">Back to projects</a>
+{% endblock content %}
