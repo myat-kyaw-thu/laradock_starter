@@ -1,4 +1,12 @@
 {% extends 'main.html' %} {% block content %}
 <h1>Projects List</h1>
-<p>Welcome to the projects page!</p>
-{% endblock content%}
+
+{% for project in projects %}
+<div>
+  <h2>{{ project.name }}</h2>
+  <p>ID: {{ project.id }}</p>
+  <p>Description: {{ project.description }}</p>
+  <a href="{% url 'projectDetail' project.id %}">Go to details</a>
+  <hr />
+</div>
+{% endfor %} {% endblock content %}
