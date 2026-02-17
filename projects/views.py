@@ -1,9 +1,9 @@
 from django.shortcuts import render
-
 from django.http import HttpResponse
 
-def getHomePage(request):
-    return HttpResponse("Hello World")
+
+def getProjects(request):
+    return render(request, 'projects/projects.html')
 
 def getProject(request, id):
-    return HttpResponse(f"Hello Proejct {id}")
+    return render(request, 'projects/single-project.html')
