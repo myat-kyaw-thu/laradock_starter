@@ -1,0 +1,19 @@
+# Laravel source (mounted as volume, managed separately)
+src/
+!src/.gitkeep
+
+# Real env files — never commit these
+.env
+.env.docker
+
+# Keep the example files — these are safe to commit
+!.env.docker.example
+
+# Logs (added in a later step)
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+EXPLAINED.md
