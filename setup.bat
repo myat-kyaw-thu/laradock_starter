@@ -1,6 +1,6 @@
 @echo off
 :: =============================================================
-::  Laravel Docker — First-time setup script (Windows)
+::  LaraDoc Starter — First-time setup script (Windows)
 ::  Usage: setup.bat [--fresh]
 ::
 ::  --fresh   Drop existing volumes and start clean
@@ -26,7 +26,7 @@ for %%A in (%*) do (
 :: ── Banner ───────────────────────────────────────────────────
 echo.
 echo   ==========================================
-echo    Laravel Docker -- Setup Script (Windows)
+echo    LaraDoc Starter -- Setup Script (Windows)
 echo   ==========================================
 echo.
 
@@ -65,37 +65,45 @@ echo [OK] Docker and Docker Compose found.
 echo.
 echo [2/7] Setting up environment file...
 
-if not exist "src\.env" (
-  if exist ".env.docker" (
-    copy ".env.docker" "src\.env" >nul
-    echo [OK] Copied .env.docker to src\.env
-  ) else if exist ".env.docker.example" (
-    copy ".env.docker.example" "src\.env" >nul
-    echo [WARN] No .env.docker found -- copied .env.docker.example instead.
-    echo [WARN] Open src\.env and replace all 'change_me' values before continuing.
-    echo.
-    pause
-  ) else (
-    echo [ERROR] Neither .env.docker nor .env.docker.example found.
-    echo         Run this script from the project root.
-    pause & exit /b 1
-  )
-) else (
-  echo [SKIP] src\.env already exists. Delete it to reset.
-)
+if exist "src\.env" goto env_exists
+if exist ".env.docker" goto copy_docker_env
+if exist ".env.docker.example" goto copy_example_env
+echo [ERROR] Neither .env.docker nor .env.docker.example found.
+echo         Run this script from the project root.
+pause & exit /b 1
+
+:copy_docker_env
+copy ".env.docker" "src\.env" >nul
+echo [OK] Copied .env.docker to src\.env
+goto env_done
+
+:copy_example_env
+copy ".env.docker.example" "src\.env" >nul
+echo [WARN] No .env.docker found -- copied .env.docker.example instead.
+echo [WARN] Open src\.env and review values before continuing.
+echo.
+pause
+goto env_done
+
+:env_exists
+echo [SKIP] src\.env already exists. Delete it to reset.
+
+:env_done
 
 :: ── 3. Fresh mode ────────────────────────────────────────────
-if "%FRESH%"=="true" (
-  echo.
-  echo [3/7] Fresh mode -- removing existing volumes...
-  %DC% down -v --remove-orphans
-  echo [OK] Volumes removed.
-) else (
-  echo.
-  echo [3/7] Skipping volume wipe (use --fresh to wipe and start clean).
-)
+echo.
+if not "%FRESH%"=="true" goto skip_fresh
+echo [3/7] Fresh mode -- removing existing volumes...
+%DC% down -v --remove-orphans
+echo [OK] Volumes removed.
+goto after_fresh
 
-:: ── 4. Build images ───────────────────────────────────────────
+:skip_fresh
+echo [3/7] Skipping volume wipe (use --fresh to wipe and start clean).
+
+:after_fresh
+
+:: ── 4. Build images ──────────────────────────────────────────
 echo.
 echo [4/7] Building Docker images (first run may take a few minutes)...
 %DC% build
@@ -105,7 +113,7 @@ if %ERRORLEVEL% neq 0 (
 )
 echo [OK] Images built.
 
-:: ── 5. Start containers ───────────────────────────────────────
+:: ── 5. Start containers ──────────────────────────────────────
 echo.
 echo [5/7] Starting containers...
 %DC% up -d
@@ -119,59 +127,66 @@ echo [OK] Containers started.
 echo.
 echo [6/7] Waiting for MySQL to be ready...
 set /a WAITED=0
+
 :wait_mysql
-  %DC% exec mysql mysqladmin ping -h localhost --silent >nul 2>&1
-  if %ERRORLEVEL% equ 0 goto mysql_ready
-  if %WAITED% geq 60 (
-    echo [ERROR] MySQL did not become healthy within 60s.
-    echo         Run: %DC% logs mysql
-    pause & exit /b 1
-  )
-  timeout /t 2 /nobreak >nul
-  set /a WAITED+=2
-  goto wait_mysql
+%DC% exec mysql mysqladmin ping -h localhost --silent >nul 2>&1
+if %ERRORLEVEL% equ 0 goto mysql_ready
+if %WAITED% geq 60 goto mysql_timeout
+timeout /t 2 /nobreak >nul
+set /a WAITED+=2
+goto wait_mysql
+
+:mysql_timeout
+echo [ERROR] MySQL did not become healthy within 60s.
+echo         Run: %DC% logs mysql
+pause & exit /b 1
+
 :mysql_ready
 echo [OK] MySQL is ready.
 
-:: ── 7. Create or install Laravel ────────────────────────────
+:: ── 7. Create or install Laravel ─────────────────────────────
 echo.
 echo [7/7] Setting up Laravel...
 
-if not exist "src\composer.json" (
-  echo [INFO] src\ is empty -- creating a fresh Laravel project...
-  echo [INFO] This downloads Laravel via Composer, may take a minute...
-  echo.
-  %DC% run --rm composer create-project laravel/laravel .
-  if %ERRORLEVEL% neq 0 (
-    echo [ERROR] Laravel project creation failed.
-    pause & exit /b 1
-  )
-  echo [OK] Laravel project created in src\
+if exist "src\composer.json" goto laravel_exists
 
-  :: Re-apply our Docker env over the one Laravel just created
-  if exist ".env.docker" (
-    copy ".env.docker" "src\.env" >nul
-    echo [OK] Re-applied .env.docker to src\.env
-  ) else if exist ".env.docker.example" (
-    copy ".env.docker.example" "src\.env" >nul
-    echo [OK] Re-applied .env.docker.example to src\.env
-  )
-) else (
-  echo [OK] Laravel project found in src\
-  echo Installing Composer dependencies...
-  %DC% exec php composer install --no-interaction --prefer-dist
-  if %ERRORLEVEL% neq 0 (
-    echo [ERROR] Composer install failed.
-    pause & exit /b 1
-  )
-  echo [OK] Composer dependencies installed.
+echo [INFO] src\ is empty -- creating a fresh Laravel project...
+echo [INFO] This downloads Laravel via Composer, may take a minute...
+echo.
+%DC% run --rm composer create-project laravel/laravel .
+if %ERRORLEVEL% neq 0 (
+  echo [ERROR] Laravel project creation failed.
+  pause & exit /b 1
 )
+echo [OK] Laravel project created in src\
 
-:: Generate app key if not set
+:: Re-apply our Docker env over the one Laravel just created
+if exist ".env.docker" (
+  copy ".env.docker" "src\.env" >nul
+  echo [OK] Re-applied .env.docker to src\.env
+) else if exist ".env.docker.example" (
+  copy ".env.docker.example" "src\.env" >nul
+  echo [OK] Re-applied .env.docker.example to src\.env
+)
+goto after_laravel
+
+:laravel_exists
+echo [OK] Laravel project found in src\
+echo Installing Composer dependencies...
+%DC% exec php composer install --no-interaction --prefer-dist
+if %ERRORLEVEL% neq 0 (
+  echo [ERROR] Composer install failed.
+  pause & exit /b 1
+)
+echo [OK] Composer dependencies installed.
+
+:after_laravel
+
+:: ── Generate app key ─────────────────────────────────────────
 echo Generating application key...
 %DC% exec php php artisan key:generate
 
-:: Run migrations
+:: ── Run migrations ───────────────────────────────────────────
 echo Running migrations...
 %DC% exec php php artisan migrate --force
 if %ERRORLEVEL% neq 0 (
@@ -180,7 +195,7 @@ if %ERRORLEVEL% neq 0 (
 )
 echo [OK] Laravel is ready.
 
-:: ── Done ──────────────────────────────────────────────────────
+:: ── Done ─────────────────────────────────────────────────────
 echo.
 echo   ==========================================
 echo    Setup complete! Your app is ready.
@@ -191,7 +206,7 @@ echo   phpMyAdmin   --^>  http://localhost:8081
 echo   Mailpit      --^>  http://localhost:8025
 echo.
 echo   Run "make help" to see all available commands.
-echo   (Requires make — install via: winget install GnuWin32.Make)
+echo   (Requires make -- install via: winget install GnuWin32.Make)
 echo.
 pause
 endlocal
