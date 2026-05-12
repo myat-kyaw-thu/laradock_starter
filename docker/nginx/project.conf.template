@@ -1,0 +1,45 @@
+# ── Project: __PROJECT_NAME__ ──────────────────────────────────
+server {
+    listen __PORT__;
+    server_name localhost;
+
+    root  /var/www/html/__PROJECT_NAME__/public;
+    index index.php index.html;
+
+    client_max_body_size 50M;
+
+    gzip            on;
+    gzip_types      text/plain text/css application/json application/javascript
+                    text/xml application/xml text/javascript image/svg+xml;
+    gzip_min_length 1024;
+
+    access_log /var/log/nginx/__PROJECT_NAME__-access.log;
+    error_log  /var/log/nginx/__PROJECT_NAME__-error.log;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        try_files $uri =404;
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_pass            php:9000;
+        fastcgi_index           index.php;
+        include                 fastcgi_params;
+        fastcgi_param           SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param           PATH_INFO $fastcgi_path_info;
+        fastcgi_read_timeout    120;
+        fastcgi_connect_timeout 120;
+    }
+
+    location ~ /\. {
+        deny all;
+        return 404;
+    }
+
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js|woff|woff2|ttf|svg)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+}
