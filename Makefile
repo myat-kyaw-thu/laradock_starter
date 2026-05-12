@@ -45,7 +45,7 @@ init-fresh: ## Same as init but wipes all volumes first (clean slate)
 .PHONY: install
 install: ## Full first-time setup: build → up → composer install → key → migrate
 	@echo "$(CYAN)▶ Building images...$(RESET)"
-	$(DOCKER_COMPOSE) build --no-cache
+	$(DOCKER_COMPOSE) build
 	@echo "$(CYAN)▶ Starting containers...$(RESET)"
 	$(DOCKER_COMPOSE) up -d
 	@echo "$(CYAN)▶ Installing Composer dependencies...$(RESET)"
@@ -77,6 +77,10 @@ restart: ## Restart all containers
 .PHONY: build
 build: ## Rebuild images (no cache)
 	$(DOCKER_COMPOSE) build --no-cache
+
+.PHONY: pull
+pull: ## Pull latest versions of all pre-built images
+	$(DOCKER_COMPOSE) pull
 
 .PHONY: ps
 ps: ## Show running containers and their status
@@ -113,8 +117,8 @@ shell: ## Open a bash shell inside the PHP container
 	$(DOCKER_COMPOSE) exec php bash
 
 .PHONY: shell-mysql
-shell-mysql: ## Open a MySQL shell (uses .env.docker credentials)
-	$(DOCKER_COMPOSE) exec mysql mysql -u laravel -psecret laravel
+shell-mysql: ## Open a MySQL shell (reads credentials from .env.docker)
+	$(DOCKER_COMPOSE) exec mysql mysql -u $$(grep MYSQL_USER .env.docker | cut -d= -f2) -p$$(grep MYSQL_PASSWORD .env.docker | cut -d= -f2) $$(grep MYSQL_DATABASE .env.docker | cut -d= -f2)
 
 .PHONY: shell-redis
 shell-redis: ## Open a Redis CLI shell
