@@ -145,7 +145,7 @@ If you skip the port, it auto-detects the next free one starting from 8080.
 | Service | URL |
 |---|---|
 | Project (default) | http://localhost:8080 |
-| phpMyAdmin | http://localhost:8081 |
+| phpMyAdmin | http://localhost:9090 |
 | Mailpit UI | http://localhost:8025 |
 | Mailpit SMTP | localhost:1025 |
 | MySQL | localhost:3306 |
