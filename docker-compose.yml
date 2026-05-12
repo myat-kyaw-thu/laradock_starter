@@ -1,4 +1,4 @@
-name: laravel-dev
+name: laradoc-starter
 
 services:
 
@@ -11,14 +11,10 @@ services:
     restart: unless-stopped
     working_dir: /var/www/html
     volumes:
-      # Mount your Laravel project code (current directory = project root)
-      - ./src:/var/www/html
-      # Persist Composer cache so installs are fast after first run
+      - ./src:/var/www/html                          # all projects live here
       - composer_cache:/home/laravel/.composer
     environment:
       - APP_ENV=local
-    env_file:
-      - .env.docker
     networks:
       - laravel
     depends_on:
@@ -29,15 +25,15 @@ services:
 
   # ── Nginx ─────────────────────────────────────────────────────
   nginx:
-    image: nginx:alpine
+    image: nginx:1.27-alpine
     container_name: laravel_nginx
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "80:80"          # default catch-all
+      - "8080-8090:8080-8090"   # project ports (up to 10 projects)
     volumes:
-      # Same code mount so Nginx can serve static files directly
       - ./src:/var/www/html
-      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d      # only conf.d/ loaded — template stays outside
     networks:
       - laravel
     depends_on:
@@ -52,16 +48,13 @@ services:
       - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootsecret}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-laravel}
-      MYSQL_USER: ${MYSQL_USER:-laravel}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-secret}
     volumes:
       - mysql_data:/var/lib/mysql
       - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf:ro
     networks:
       - laravel
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootsecret}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--silent"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -69,7 +62,7 @@ services:
 
   # ── phpMyAdmin ────────────────────────────────────────────────
   phpmyadmin:
-    image: phpmyadmin:latest
+    image: phpmyadmin:5.2
     container_name: laravel_phpmyadmin
     restart: unless-stopped
     ports:
@@ -95,58 +88,52 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes
     networks:
       - laravel
 
-  # ── Mailpit (local email catcher) ────────────────────────────
+  # ── Mailpit ───────────────────────────────────────────────────
   mailpit:
-    image: axllent/mailpit:latest
+    image: axllent/mailpit:v1.21
     container_name: laravel_mailpit
     restart: unless-stopped
     ports:
-      - "8025:8025"   # Web UI
-      - "1025:1025"   # SMTP
+      - "8025:8025"
+      - "1025:1025"
     networks:
       - laravel
 
-  # ── Node / Vite (frontend dev server with HMR) ───────────────
+  # ── Composer (one-off runner) ─────────────────────────────────
+  # No container_name — avoids conflict when run multiple times
+  composer:
+    image: composer:2.8
+    working_dir: /var/www/html
+    volumes:
+      - ./src:/var/www/html
+      - composer_cache:/tmp/composer
+    environment:
+      - COMPOSER_HOME=/tmp/composer
+    entrypoint: ["composer"]
+    networks:
+      - laravel
+
+  # ── Node / Vite (frontend — optional profile) ─────────────────
   node:
     image: node:22-alpine
     container_name: laravel_node
     restart: unless-stopped
     working_dir: /var/www/html
     volumes:
-      # Same code mount as PHP so Vite watches the same files
       - ./src:/var/www/html
-      # Persist node_modules so npm install is fast after first run
       - node_modules:/var/www/html/node_modules
     ports:
-      - "5173:5173"   # Vite dev server
-    # VITE_HOST tells the Vite config which host to bind to inside Docker
+      - "5173:5173"
     environment:
       - VITE_HOST=0.0.0.0
-    command: sh -c "npm install && npm run dev"
+    command: sh -c "[ -d node_modules ] || npm install && npm run dev"
     networks:
       - laravel
     profiles:
-      # Only starts when you explicitly run: docker compose --profile frontend up
-      # OR: make dev  (which passes the profile automatically)
       - frontend
-
-  # ── Composer (one-off runner, not a long-running service) ─────
-  composer:
-    build:
-      context: ./docker/php
-      dockerfile: Dockerfile
-    container_name: laravel_composer
-    working_dir: /var/www/html
-    volumes:
-      - ./src:/var/www/html
-      - composer_cache:/home/laravel/.composer
-    entrypoint: ["composer"]
-    networks:
-      - laravel
 
 # ── Networks ──────────────────────────────────────────────────────
 networks:
@@ -156,10 +143,6 @@ networks:
 # ── Volumes ───────────────────────────────────────────────────────
 volumes:
   mysql_data:
-    driver: local
   redis_data:
-    driver: local
   composer_cache:
-    driver: local
   node_modules:
-    driver: local
