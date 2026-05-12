@@ -64,6 +64,10 @@ fi
 step "Building images and starting containers"
 echo -e "  ${YELLOW}First run pulls/builds images — may take a few minutes${RESET}\n"
 
+# Force remove any stale containers with our names before starting
+for C in laravel_php laravel_nginx laravel_mysql laravel_redis laravel_phpmyadmin laravel_mailpit; do
+  docker rm -f "$C" &>/dev/null || true
+done
 $DC up -d --build --remove-orphans
 ok "Containers started."
 
@@ -91,6 +95,6 @@ echo -e "  Next step — add your first project:\n"
 echo -e "    ${CYAN}bash add-project.sh my-app 8080${RESET}"
 echo ""
 echo -e "  Services:"
-echo -e "    phpMyAdmin  →  ${CYAN}http://localhost:8081${RESET}"
+echo -e "    phpMyAdmin  →  ${CYAN}http://localhost:9090${RESET}"
 echo -e "    Mailpit     →  ${CYAN}http://localhost:8025${RESET}"
 echo ""

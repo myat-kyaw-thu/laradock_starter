@@ -74,6 +74,10 @@ echo.
 echo [3/4] Building images and starting containers...
 echo       (First run pulls/builds images -- may take a few minutes)
 echo.
+:: Force remove any stale containers with our names before starting
+for %%C in (laravel_php laravel_nginx laravel_mysql laravel_redis laravel_phpmyadmin laravel_mailpit) do (
+  docker rm -f %%C >nul 2>&1
+)
 %DC% up -d --build --remove-orphans
 if %ERRORLEVEL% neq 0 (
   echo [ERROR] Failed to start containers. Check output above.
@@ -112,7 +116,7 @@ echo.
 echo     add-project.bat my-app 8080
 echo.
 echo   Services:
-echo     phpMyAdmin  --^>  http://localhost:8081
+echo     phpMyAdmin  --^>  http://localhost:9090
 echo     Mailpit     --^>  http://localhost:8025
 echo.
 pause
