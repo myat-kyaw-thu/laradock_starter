@@ -193,7 +193,7 @@ echo    Project '%PROJECT%' is ready!
 echo   ==========================================
 echo.
 echo   App         --^>  http://localhost:%PORT%
-echo   phpMyAdmin  --^>  http://localhost:8081
+echo   phpMyAdmin  --^>  http://localhost:9090
 echo   Database    --^>  %PROJECT%
 echo   Files       --^>  src\%PROJECT%\
 echo.
