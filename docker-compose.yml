@@ -12,6 +12,7 @@ services:
     working_dir: /var/www/html
     volumes:
       - ./src:/var/www/html                          # all projects live here
+      - ./docker/nginx/dashboard:/var/www/dashboard # local dashboard
       - composer_cache:/home/laravel/.composer
     environment:
       - APP_ENV=local
@@ -20,8 +21,6 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-      redis:
-        condition: service_started
 
   # ── Nginx ─────────────────────────────────────────────────────
   nginx:
@@ -29,10 +28,11 @@ services:
     container_name: laravel_nginx
     restart: unless-stopped
     ports:
-      - "80:80"          # default catch-all
-      - "8080-8090:8080-8090"   # project ports (up to 10 projects)
+      - "80:80"          # catch-all and domain routing
+      - "443:443"        # ssl (optional future extension)
     volumes:
       - ./src:/var/www/html
+      - ./docker/nginx/dashboard:/var/www/dashboard
       - ./docker/nginx/conf.d:/etc/nginx/conf.d      # only conf.d/ loaded — template stays outside
     networks:
       - laravel
@@ -65,8 +65,7 @@ services:
     image: phpmyadmin:5.2
     container_name: laravel_phpmyadmin
     restart: unless-stopped
-    ports:
-      - "9090:80"
+    # Ports removed: phpMyAdmin is now proxied via http://phpmyadmin.localhost
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
@@ -90,6 +89,8 @@ services:
       - redis_data:/data
     networks:
       - laravel
+    profiles:
+      - extras
 
   # ── Mailpit ───────────────────────────────────────────────────
   mailpit:
@@ -97,10 +98,12 @@ services:
     container_name: laravel_mailpit
     restart: unless-stopped
     ports:
-      - "8025:8025"
-      - "1025:1025"
+      - "1025:1025" # Keep SMTP port open for local CLI mailers
+    # Port 8025 removed: Mailpit web UI is now proxied via http://mailpit.localhost
     networks:
       - laravel
+    profiles:
+      - extras
 
   # ── Composer (one-off runner) ─────────────────────────────────
   # No container_name — avoids conflict when run multiple times
@@ -126,7 +129,7 @@ services:
       - ./src:/var/www/html
       - node_modules:/var/www/html/node_modules
     ports:
-      - "5173:5173"
+      - "5173-5183:5173-5183" # Support multiple Vite instances on a port range
     environment:
       - VITE_HOST=0.0.0.0
     command: sh -c "[ -d node_modules ] || npm install && npm run dev"
