@@ -1,23 +1,10 @@
 FROM php:8.4-fpm-alpine
 
-# Install system deps + PHP extensions + PECL redis in one layer
-# so build deps are removed before the layer is committed (smaller image)
-RUN apk add --no-cache \
-        bash curl git unzip zip \
-        libpng-dev libjpeg-turbo-dev libwebp-dev freetype-dev \
-        libzip-dev icu-dev oniguruma-dev libxml2-dev \
-    && apk add --no-cache --virtual .build-deps \
-        linux-headers $PHPIZE_DEPS \
-    && docker-php-ext-configure gd \
-        --with-freetype --with-jpeg --with-webp \
-    && docker-php-ext-install -j$(nproc) \
-        pdo pdo_mysql mbstring exif pcntl bcmath gd zip intl xml opcache \
-    && pecl install redis \
-    && docker-php-ext-enable redis \
-    && apk del .build-deps \
-    && rm -rf /tmp/* /var/cache/apk/*
+RUN apk add --no-cache bash curl git unzip zip
 
-# Install Composer (official method — no extra image needed)
+COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
+RUN install-php-extensions gd pdo_mysql mbstring exif pcntl bcmath zip intl xml opcache redis
+
 COPY --from=composer:2.8 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
