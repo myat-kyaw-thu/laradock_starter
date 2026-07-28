@@ -1,7 +1,7 @@
 # ── Project: __PROJECT_NAME__ ──────────────────────────────────
 server {
-    listen __PORT__;
-    server_name localhost;
+    listen 80;
+    server_name __PROJECT_NAME__.localhost;
 
     root  /var/www/html/__PROJECT_NAME__/public;
     index index.php index.html;
