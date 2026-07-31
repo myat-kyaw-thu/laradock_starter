@@ -68,7 +68,7 @@ echo -e "  ${YELLOW}First run pulls/builds images — may take a few minutes${RE
 for C in laravel_php laravel_nginx laravel_mysql laravel_redis laravel_phpmyadmin laravel_mailpit; do
   docker rm -f "$C" &>/dev/null || true
 done
-$DC up -d --build --remove-orphans
+$DC up -d --remove-orphans
 ok "Containers started."
 
 # ── 4. Wait for MySQL ────────────────────────────────────────
@@ -92,9 +92,9 @@ echo -e "${GREEN}${BOLD}║  ✔  Environment is up and running!           ║${
 echo -e "${GREEN}${BOLD}╚══════════════════════════════════════════════╝${RESET}"
 echo ""
 echo -e "  Next step — add your first project:\n"
-echo -e "    ${CYAN}bash add-project.sh my-app 8080${RESET}"
+echo -e "    ${CYAN}bash add-project.sh my-app${RESET}"
 echo ""
 echo -e "  Services:"
-echo -e "    phpMyAdmin  →  ${CYAN}http://localhost:9090${RESET}"
-echo -e "    Mailpit     →  ${CYAN}http://localhost:8025${RESET}"
+echo -e "    phpMyAdmin  →  ${CYAN}http://phpmyadmin.localhost${RESET}"
+echo -e "    Mailpit     →  ${CYAN}http://mailpit.localhost${RESET}"
 echo ""
