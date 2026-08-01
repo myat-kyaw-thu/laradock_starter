@@ -78,7 +78,7 @@ echo.
 for %%C in (laravel_php laravel_nginx laravel_mysql laravel_redis laravel_phpmyadmin laravel_mailpit) do (
   docker rm -f %%C >nul 2>&1
 )
-%DC% up -d --build --remove-orphans
+%DC% up -d --remove-orphans
 if %ERRORLEVEL% neq 0 (
   echo [ERROR] Failed to start containers. Check output above.
   pause & exit /b 1
@@ -113,11 +113,11 @@ echo   ==========================================
 echo.
 echo   Next step — add your first project:
 echo.
-echo     add-project.bat my-app 8080
+echo     add-project.bat my-app
 echo.
 echo   Services:
-echo     phpMyAdmin  --^>  http://localhost:9090
-echo     Mailpit     --^>  http://localhost:8025
+echo     phpMyAdmin  --^>  http://phpmyadmin.localhost
+echo     Mailpit     --^>  http://mailpit.localhost
 echo.
 pause
 endlocal
