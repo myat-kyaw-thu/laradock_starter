@@ -33,14 +33,13 @@ error() { echo -e "${RED}✖ $1${RESET}"; exit 1; }
 
 # ── Parse arguments ──────────────────────────────────────────
 PROJECT="${1:-}"
-PORT="${2:-}"
 CLONE_MODE=false
 CLONE_URL=""
 EXISTING_MODE=false
 
-[[ -z "$PROJECT" ]] && error "Project name required.\nUsage: bash add-project.sh <name> [port] [--clone <url>] [--existing]"
+[[ -z "$PROJECT" ]] && error "Project name required.\nUsage: bash add-project.sh <name> [--clone <url>] [--existing]"
 
-shift; shift 2>/dev/null || true
+shift || true
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --clone)    CLONE_MODE=true;    CLONE_URL="${2:-}"; shift 2 ;;
@@ -58,18 +57,16 @@ else
   error "Docker Compose not found."
 fi
 
-# ── Auto-detect port if not given ────────────────────────────
-if [[ -z "$PORT" ]]; then
-  PORT=8080
-  while grep -r "listen ${PORT}" docker/nginx/conf.d/ &>/dev/null 2>&1; do
-    PORT=$((PORT + 1))
-  done
-fi
+# ── Generate dynamic project subdomains and Redis databases ──
+# Count existing conf.d configurations to assign a unique Redis Database index
+REDIS_DB_INDEX=$(ls -1 docker/nginx/conf.d/*.conf 2>/dev/null | wc -l || echo 0)
+REDIS_DB_INDEX=$((REDIS_DB_INDEX + 1))
+VITE_PORT=$((5173 + REDIS_DB_INDEX - 1))
 
 # ── Banner ───────────────────────────────────────────────────
 echo -e "${BOLD}"
 echo "  ╔══════════════════════════════════════╗"
-echo "  ║  Adding project: ${PROJECT} on port ${PORT}"
+echo "  ║  Adding project: ${PROJECT}.localhost"
 echo "  ╚══════════════════════════════════════╝"
 echo -e "${RESET}"
 
@@ -93,27 +90,33 @@ elif [[ "$CLONE_MODE" == true ]]; then
 else
   [[ -d "src/${PROJECT}" ]] && error "src/${PROJECT}/ already exists. Use --existing or choose a different name."
   echo "  Creating fresh Laravel project — this may take a minute..."
-  $DC run --rm -w /var/www/html composer create-project laravel/laravel "${PROJECT}"
+  $DC exec php composer create-project laravel/laravel "${PROJECT}"
   ok "Fresh Laravel project created in src/${PROJECT}/"
 fi
 
 # ── 2. Nginx config ──────────────────────────────────────────
-step "2/8" "Creating Nginx config (port ${PORT})"
+step "2/8" "Creating Nginx config"
 
 CONF="docker/nginx/conf.d/${PROJECT}.conf"
 sed -e "s/__PROJECT_NAME__/${PROJECT}/g" \
-    -e "s/__PORT__/${PORT}/g" \
     docker/nginx/project.conf.template > "$CONF"
 
 ok "Created ${CONF}"
 
 # ── 3. Database ───────────────────────────────────────────────
-step "3/8" "Creating database '${PROJECT}'"
+step "3/8" "Creating database and dedicated user (WET isolation)"
+
+# Clean project name for database user (convert hyphens to underscores)
+DB_USER=$(echo "${PROJECT}" | tr '-' '_')
+DB_PASS=$(openssl rand -hex 12 2>/dev/null || tr -dc 'a-zA-Z0-9' </dev/urandom | head -c 16)
 
 $DC exec mysql mysql -u root -prootsecret \
-  -e "CREATE DATABASE IF NOT EXISTS \`${PROJECT}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" \
-  && ok "Database '${PROJECT}' created." \
-  || warn "Could not create database. Check MySQL root password."
+  -e "CREATE DATABASE IF NOT EXISTS \`${PROJECT}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+      CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';
+      GRANT ALL PRIVILEGES ON \`${PROJECT}\`.* TO '${DB_USER}'@'%';
+      FLUSH PRIVILEGES;" \
+  && ok "Database and isolated user '${DB_USER}' created successfully." \
+  || warn "Could not create database/user. Check MySQL root password."
 
 # ── 4. .env file ─────────────────────────────────────────────
 step "4/8" "Setting up .env"
@@ -125,26 +128,44 @@ if [[ ! -f "src/${PROJECT}/.env" ]]; then
     cp .env.docker.example "src/${PROJECT}/.env"
   fi
 
-  # Patch APP_NAME, APP_URL, DB_DATABASE for this project
+  # Patch APP_NAME, APP_URL, DB credentials
   sed -i.bak \
     -e "s|^APP_NAME=.*|APP_NAME=${PROJECT}|" \
-    -e "s|^APP_URL=.*|APP_URL=http://localhost:${PORT}|" \
+    -e "s|^APP_URL=.*|APP_URL=http://${PROJECT}.localhost|" \
     -e "s|^DB_DATABASE=.*|DB_DATABASE=${PROJECT}|" \
+    -e "s|^DB_USERNAME=.*|DB_USERNAME=${DB_USER}|" \
+    -e "s|^DB_PASSWORD=.*|DB_PASSWORD=${DB_PASS}|" \
     "src/${PROJECT}/.env"
+
+  # Append Redis / Cache isolation parameters
+  if ! grep -q "REDIS_DB=" "src/${PROJECT}/.env"; then
+    echo "" >> "src/${PROJECT}/.env"
+    echo "# Isolation Settings" >> "src/${PROJECT}/.env"
+    echo "REDIS_DB=${REDIS_DB_INDEX}" >> "src/${PROJECT}/.env"
+    echo "REDIS_PREFIX=${PROJECT}_" >> "src/${PROJECT}/.env"
+    echo "CACHE_PREFIX=${PROJECT}_cache" >> "src/${PROJECT}/.env"
+  else
+    sed -i.bak \
+      -e "s|^REDIS_DB=.*|REDIS_DB=${REDIS_DB_INDEX}|" \
+      -e "s|^REDIS_PREFIX=.*|REDIS_PREFIX=${PROJECT}_|" \
+      -e "s|^CACHE_PREFIX=.*|CACHE_PREFIX=${PROJECT}_cache|" \
+      "src/${PROJECT}/.env"
+  fi
   rm -f "src/${PROJECT}/.env.bak"
 
-  ok "Created src/${PROJECT}/.env"
+  ok "Created src/${PROJECT}/.env with isolated parameters."
 else
-  warn "src/${PROJECT}/.env already exists — skipping."
+  # Database and username might have changed if created on another setup, warn developer
+  warn "src/${PROJECT}/.env already exists — skipping overwrite."
 fi
 
 # ── 5. Permissions ────────────────────────────────────────────
 step "5/8" "Fixing permissions"
 
-$DC exec --user root php chown -R laravel:laravel "/var/www/html/${PROJECT}"
+$DC exec --user root php chown -R laravel:laravel "/var/www/html/${PROJECT}/storage" "/var/www/html/${PROJECT}/bootstrap/cache" || true
 $DC exec --user root php chmod -R 775 \
   "/var/www/html/${PROJECT}/storage" \
-  "/var/www/html/${PROJECT}/bootstrap/cache"
+  "/var/www/html/${PROJECT}/bootstrap/cache" || true
 
 ok "Permissions set."
 
@@ -158,20 +179,28 @@ else
   ok "vendor/ already exists — skipping composer install."
 fi
 
-# ── 7. App key + migrations ───────────────────────────────────
-step "7/8" "Generating app key and running migrations"
+# ── 7. App key + migrations + Vite Config ─────────────────────
+step "7/8" "Running Laravel setup tasks"
 
 $DC exec php sh -c "cd /var/www/html/${PROJECT} && php artisan key:generate --force"
 $DC exec php sh -c "cd /var/www/html/${PROJECT} && php artisan migrate --force" \
   && ok "Migrations complete." \
   || warn "Migrations failed. Check src/${PROJECT}/.env DB settings."
 
+# Copy dynamic Docker-ready Vite config and assign specific port
+if [[ ! -f "src/${PROJECT}/vite.config.js" ]]; then
+  cp "docker/vite.config.js" "src/${PROJECT}/vite.config.js"
+  sed -i.bak -e "s/port: 5173/port: ${VITE_PORT}/g" "src/${PROJECT}/vite.config.js"
+  rm -f "src/${PROJECT}/vite.config.js.bak"
+  ok "Copied and configured project vite.config.js on port ${VITE_PORT}"
+fi
+
 # ── 8. Reload Nginx ───────────────────────────────────────────
 step "8/8" "Reloading Nginx"
 
 $DC exec nginx nginx -s reload \
   && ok "Nginx reloaded." \
-  || warn "Nginx reload failed. Check: docker/nginx/conf.d/${PROJECT}.conf"
+  || warn "Nginx reload failed."
 
 # ── Done ─────────────────────────────────────────────────────
 echo ""
@@ -179,11 +208,12 @@ echo -e "${GREEN}${BOLD}╔═════════════════�
 echo -e "${GREEN}${BOLD}║  ✔  Project '${PROJECT}' is ready!${RESET}"
 echo -e "${GREEN}${BOLD}╚══════════════════════════════════════════════╝${RESET}"
 echo ""
-echo -e "  App         →  ${CYAN}http://localhost:${PORT}${RESET}"
-echo -e "  phpMyAdmin  →  ${CYAN}http://localhost:9090${RESET}"
+echo -e "  App         →  ${CYAN}http://${PROJECT}.localhost${RESET}"
+echo -e "  phpMyAdmin  →  ${CYAN}http://phpmyadmin.localhost${RESET}"
+echo -e "  Mailpit     →  ${CYAN}http://mailpit.localhost${RESET}"
 echo -e "  Database    →  ${CYAN}${PROJECT}${RESET}"
 echo -e "  Files       →  ${CYAN}src/${PROJECT}/${RESET}"
 echo ""
 echo -e "  Add another project:"
-echo -e "    ${CYAN}bash add-project.sh <name> [port]${RESET}"
+echo -e "    ${CYAN}bash add-project.sh <name>${RESET}"
 echo ""
