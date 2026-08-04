@@ -8,8 +8,24 @@
 # Detect docker compose v2 (plugin) vs v1 (standalone)
 DOCKER_COMPOSE := $(shell docker compose version > /dev/null 2>&1 && echo "docker compose" || echo "docker-compose")
 
-# PHP container name (matches docker-compose.yml)
-PHP := $(DOCKER_COMPOSE) exec php
+# Detect project list inside src/
+PROJECTS := $(shell ls -1 src/ 2>/dev/null | grep -v '^\.' || echo "")
+
+# If only one project exists, default to it
+ifeq ($(words $(PROJECTS)), 1)
+  DEFAULT_PROJECT := $(PROJECTS)
+else
+  DEFAULT_PROJECT :=
+endif
+
+PROJECT ?= $(DEFAULT_PROJECT)
+
+# Scopes command execution to specific project directory
+ifeq ($(PROJECT),)
+  PHP := @echo "Error: PROJECT variable is required. Example: make migrate PROJECT=my-app"; exit 1; #
+else
+  PHP := $(DOCKER_COMPOSE) exec php sh -c 'cd /var/www/html/$(PROJECT) && "$$@"' --
+endif
 
 # ── Colours ──────────────────────────────────────────────────
 RESET  = \033[0m
@@ -54,7 +70,7 @@ install: ## Full first-time setup: build → up → composer install → key →
 	$(PHP) php artisan key:generate
 	@echo "$(CYAN)▶ Running migrations...$(RESET)"
 	$(PHP) php artisan migrate
-	@echo "$(GREEN)✔ Setup complete! App → http://localhost:8080$(RESET)"
+	@echo "$(GREEN)✔ Setup complete! App → http://$(PROJECT).localhost$(RESET)"
 
 .PHONY: setup
 setup: ## Alias for install (friendlier name for new devs)
@@ -63,12 +79,24 @@ setup: ## Alias for install (friendlier name for new devs)
 ##@ 🐳 Docker
 
 .PHONY: up
-up: ## Start backend containers only (no Vite). Use 'make dev' to include frontend
+up: ## Start essential containers (Nginx, PHP, MySQL, phpMyAdmin)
 	$(DOCKER_COMPOSE) up -d
+
+.PHONY: up-all
+up-all: ## Start all services including Redis and Mailpit (all profiles)
+	$(DOCKER_COMPOSE) --profile extras up -d
+
+.PHONY: redis
+redis: ## Start the Redis service
+	$(DOCKER_COMPOSE) up -d redis
+
+.PHONY: mailpit
+mailpit: ## Start the Mailpit service
+	$(DOCKER_COMPOSE) up -d mailpit
 
 .PHONY: down
 down: ## Stop and remove containers
-	$(DOCKER_COMPOSE) down
+	$(DOCKER_COMPOSE) down --remove-orphans
 
 .PHONY: restart
 restart: ## Restart all containers
@@ -196,12 +224,16 @@ node-shell: ## Open a shell inside the node container
 	$(DOCKER_COMPOSE) --profile frontend run --rm node sh
 
 .PHONY: vite-config
-vite-config: ## Copy the Docker-ready vite.config.js stub into src/
-	@if [ -f src/vite.config.js ]; then \
-		echo "$(YELLOW)⚠ src/vite.config.js already exists — skipping. Delete it first to overwrite.$(RESET)"; \
+vite-config: ## Copy the Docker-ready vite.config.js stub into the targeted project
+	@if [ -z "$(PROJECT)" ]; then \
+		echo "$(RED)Error: PROJECT variable is required. Example: make vite-config PROJECT=my-app$(RESET)"; \
+		exit 1; \
+	fi
+	@if [ -f src/$(PROJECT)/vite.config.js ]; then \
+		echo "$(YELLOW)⚠ src/$(PROJECT)/vite.config.js already exists — skipping. Delete it first to overwrite.$(RESET)"; \
 	else \
-		cp docker/vite.config.js src/vite.config.js; \
-		echo "$(GREEN)✔ Copied docker/vite.config.js → src/vite.config.js$(RESET)"; \
+		cp docker/vite.config.js src/$(PROJECT)/vite.config.js; \
+		echo "$(GREEN)✔ Copied docker/vite.config.js → src/$(PROJECT)/vite.config.js$(RESET)"; \
 	fi
 
 ##@ 🧪 Testing
