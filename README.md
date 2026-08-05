@@ -4,216 +4,135 @@
 
 # LaraDoc Starter
 
-One Docker environment, multiple Laravel projects. No Laragon, no XAMPP, no paid tools. No duplicate containers.
+A lightweight, multi-tenant Docker local environment for Laravel. Access multiple isolated Laravel projects simultaneously on **port 80** using local subdomains, powered by a single shared container stack. 
 
-## Stack
+No port conflicts, no heavy virtual machines, and no complex manual DNS routing.
+
+---
+
+## 🛠️ Stack
 
 | Service | Version |
 |---|---|
-| PHP-FPM | 8.4 (Alpine) |
-| Nginx | 1.27 (Alpine) |
-| MySQL | 8.0 |
-| Redis | 7 (Alpine) |
-| phpMyAdmin | 5.2 |
-| Mailpit | v1.21 |
-| Node / Vite | 22 (optional) |
+| **PHP-FPM** | 8.4 (Alpine) |
+| **Nginx** | 1.27 (Alpine) |
+| **MySQL** | 8.0 |
+| **Redis** | 7 (Alpine) |
+| **phpMyAdmin** | 5.2 |
+| **Mailpit** | v1.21 |
+| **Node / Vite** | 22 (optional) |
 
 ---
 
-## How It Works
+## 🚀 Quick Start (SOP)
 
-```
-laradoc_starter/
-├── docker/
-│   ├── php/
-│   │   ├── Dockerfile              ← PHP 8.4 image with all Laravel extensions
-│   │   └── php.ini                 ← PHP settings (512M memory, OPcache, etc.)
-│   ├── nginx/
-│   │   ├── conf.d/                 ← One .conf per project (auto-loaded by Nginx)
-│   │   │   └── default.conf        ← Catch-all welcome page
-│   │   └── project.conf.template   ← Template used by add-project.bat
-│   ├── mysql/
-│   │   └── my.cnf                  ← MySQL config (utf8mb4, slow query log)
-│   └── vite.config.js              ← Docker-ready Vite config stub
-├── src/                            ← All your Laravel projects live here
-│   ├── project-a/
-│   ├── project-b/
-│   └── project-c/
-├── docker-compose.yml
-├── .env.docker.example             ← Copy to .env.docker and fill in values
-├── setup.bat                       ← Step 1: start the environment (Windows)
-├── setup.sh                        ← Step 1: start the environment (Mac/Linux)
-├── add-project.bat                 ← Step 2: add a project (Windows)
-└── Makefile                        ← Shortcuts for common commands
-```
+> **Prerequisite:** [Docker Desktop](https://www.docker.com/products/docker-desktop) must be installed and running.
 
-**One set of containers serves all projects.** Each project gets its own Nginx server block on its own port, its own database, and its own `.env`.
+### Step 1 — Initialize the Environment
+Build the base PHP image and start the shared service containers (Nginx, PHP, MySQL, Redis, phpMyAdmin, Mailpit):
 
----
-
-## Quick Start
-
-> **Only requirement: [Docker Desktop](https://www.docker.com/products/docker-desktop) installed and running.**
-
-### Step 1 — Start the environment
-
-```bat
+```bash
 # Windows
 setup.bat
 
 # Mac / Linux
 bash setup.sh
 ```
+*Once started, visit **http://localhost** to view your developer dashboard showing your projects and services.*
 
-This builds the PHP image and starts MySQL, Redis, Nginx, Mailpit, and phpMyAdmin. No project is created yet.
+---
 
-### Step 2 — Add your first project
+### Step 2 — Onboard a Project
+All your projects live inside the [`src/`](file:///c:/Users/User/Downloads/laradock_starter-main/src) folder. Choose one of the scenarios below to add your application:
 
-```bat
+#### Scenario A: Create a fresh Laravel project
+```bash
 # Windows
-add-project.bat my-app 8080
+add-project.bat my-app
 
 # Mac / Linux
-bash add-project.sh my-app 8080
+bash add-project.sh my-app
 ```
+*App will be live at: **http://my-app.localhost***
 
-Your app is now live at **http://localhost:8080**.
+#### Scenario B: Import a Git repository
+```bash
+# Windows
+add-project.bat my-app --clone https://github.com/org/repo.git
+
+# Mac / Linux
+bash add-project.sh my-app --clone https://github.com/org/repo.git
+```
+*App will be live at: **http://my-app.localhost***
+
+#### Scenario C: Migrate an existing local folder
+1. Copy your Laravel folder into the [`src/`](file:///c:/Users/User/Downloads/laradock_starter-main/src) folder (e.g. `src/my-app/`).
+2. Run the onboarding script with the `--existing` flag:
+   ```bash
+   # Windows
+   add-project.bat my-app --existing
+
+   # Mac / Linux
+   bash add-project.sh my-app --existing
+   ```
+*App will be live at: **http://my-app.localhost***
 
 ---
 
-## Adding Projects — All Scenarios
+## 🌐 Local Domains & Services
 
-### Scenario 1 — Fresh Laravel (new project from scratch)
+All projects and developer utilities run on **port 80** and are automatically mapped to host subdomains. Browsers resolve `.localhost` subdomains to `127.0.0.1` locally, requiring no configuration.
 
-```bat
-add-project.bat my-app 8080
-```
-
-- Creates a brand new Laravel project in `src/my-app/`
-- Sets up `.env`, database, permissions, app key, migrations
-- Live at `http://localhost:8080`
-
----
-
-### Scenario 2 — Clone from Git
-
-```bat
-add-project.bat my-app 8080 --clone https://github.com/you/my-app
-```
-
-- Clones the repo into `src/my-app/`
-- Sets up `.env`, database, permissions, runs `composer install` + migrations
-- Live at `http://localhost:8080`
+| Service | Local URL | Description |
+|---|---|---|
+| **LaraDoc Dashboard** | [http://localhost](http://localhost) | Homepage scanning and listing all projects in `src/` |
+| **Your Projects** | `http://[folder-name].localhost` | Dynamic routing to each project's public directory |
+| **phpMyAdmin** | [http://phpmyadmin.localhost](http://phpmyadmin.localhost) | MySQL Database Web GUI |
+| **Mailpit Inbox** | [http://mailpit.localhost](http://mailpit.localhost) | Local mail catcher UI (WebSocket real-time updates) |
+| **Mailpit SMTP** | `localhost:1025` | SMTP port for local mail routing |
+| **MySQL Database** | `localhost:3306` | Port to connect local GUI tools (TablePlus, HeidiSQL) |
+| **Redis Cache** | `localhost:6379` | Port to connect local Redis UI clients |
+| **Vite HMR** | `http://[folder-name].localhost:[5173-5183]` | Hot Module Replacement local ports |
 
 ---
 
-### Scenario 3 — Copy existing local project
+## ⚙️ Daily Commands
 
-1. Copy your existing Laravel folder into `src/`:
-```
-src/my-app/   ← paste your project here
-```
+All daily CLI helper commands are packaged into shortcuts inside the [`Makefile`](file:///c:/Users/User/Downloads/laradock_starter-main/Makefile).
 
-2. Then run:
-```bat
-add-project.bat my-app 8080 --existing
-```
-
-- Skips project creation (folder already there)
-- Sets up `.env` if missing, creates database, fixes permissions
-- Runs `composer install` + migrations
-- Live at `http://localhost:8080`
-
----
-
-### Adding more projects
-
-Each project needs a unique name and port:
-
-```bat
-add-project.bat my-app  8080
-add-project.bat blog    8082
-add-project.bat api     8083
+### Manage Containers
+```bash
+make up          # Start environment services
+make down        # Stop environment services (preserves databases)
+make restart     # Restart environment services
+make logs        # Tail container logs
+make shell       # Shell into PHP container (scopes to PROJECT folder if specified)
 ```
 
-If you skip the port, it auto-detects the next free one starting from 8080.
+### Run Project Tasks (Composer & Artisan)
+Since multiple projects reside inside the `src/` folder, use the `PROJECT` variable to target commands. 
 
----
-
-## Services & Ports
-
-| Service | URL |
-|---|---|
-| Project (default) | http://localhost:8080 |
-| phpMyAdmin | http://localhost:9090 |
-| Mailpit UI | http://localhost:8025 |
-| Mailpit SMTP | localhost:1025 |
-| MySQL | localhost:3306 |
-| Redis | localhost:6379 |
-| Vite HMR | http://localhost:5173 |
-
----
-
-## Daily Commands
+*Note: If you have **only one** project in the `src/` directory, the Makefile automatically detects and runs commands on it without requiring the `PROJECT` parameter.*
 
 ```bash
-make up          # start all containers
-make down        # stop all containers
-make restart     # restart all containers
-make ps          # show container status
-make logs        # tail all logs
-make shell       # bash into PHP container
-make help        # see all available commands
-```
+# Database Migrations
+make migrate PROJECT=my-app
+make migrate-fresh PROJECT=my-app
 
----
-
-## Per-Project Artisan & Composer
-
-Since `src/` holds multiple projects, specify the project when running commands:
-
-```bash
-# Artisan
-docker compose exec php sh -c "cd /var/www/html/my-app && php artisan migrate"
-docker compose exec php sh -c "cd /var/www/html/my-app && php artisan make:controller UserController"
+# Artisan Commands
+make tinker PROJECT=my-app
+make seed PROJECT=my-app
 
 # Composer
-docker compose exec php sh -c "cd /var/www/html/my-app && composer require laravel/sanctum"
-
-# Or use make with PROJECT= variable
-make migrate PROJECT=my-app
-make tinker  PROJECT=my-app
+make composer-install PROJECT=my-app
 ```
 
 ---
 
-## Frontend / Vite (optional)
+## 🔒 DX & Sandboxed Isolation Features
 
-```bash
-make dev         # starts Vite HMR alongside all services
-make vite-config # copies Docker-ready vite.config.js into src/
-```
+LaraDoc Starter uses a "WET" isolation approach to ensure that individual projects do not leak configuration or data into one another:
 
----
-
-## Clean Slate
-
-```bash
-# Wipe everything and start fresh
-setup.bat --fresh       # Windows
-bash setup.sh --fresh   # Mac / Linux
-```
-
-This removes all containers, volumes (including databases), and starts over.
-
----
-
-## Installing `make`
-
-| OS | Command |
-|---|---|
-| **Windows** | `winget install GnuWin32.Make` |
-| **macOS** | Already included |
-| **Ubuntu / Debian** | `sudo apt install make` |
-| **Fedora / RHEL** | `sudo dnf install make` |
-| **Arch** | `sudo pacman -S make` |
+1. **MySQL Sandbox Isolation:** When adding a project, the script automatically creates a unique database user and secure password, granting it access *only* to that project's schema. Root MySQL privileges are kept secure.
+2. **Redis Namespace Partitioning:** Each application gets a unique Redis database index (`REDIS_DB`) and custom prefixes (`REDIS_PREFIX` / `CACHE_PREFIX`) appended to its `.env`. This prevents session hijacks, cache collisions, and queue worker cross-consumption.
+3. **Vite HMR Port Isolation:** A dedicated Vite HMR port (incremented from `5173`) is configured per project in the project's [`vite.config.js`](file:///c:/Users/User/Downloads/laradock_starter-main/docker/vite.config.js) to support concurrent frontend builds.
