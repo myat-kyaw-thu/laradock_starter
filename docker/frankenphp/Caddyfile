@@ -1,0 +1,10 @@
+{
+    frankenphp {
+        num_threads 4
+        max_threads auto
+    }
+
+    auto_https off
+}
+
+import /etc/frankenphp/Caddyfile.d/*.caddyfile

@@ -1,4 +1,5 @@
-FROM php:8.4-fpm-alpine
+ARG PHP_VERSION=8.4
+FROM dunglas/frankenphp:1-php${PHP_VERSION}-alpine
 
 RUN apk add --no-cache bash curl git unzip zip
 
@@ -9,7 +10,6 @@ COPY --from=composer:2.8 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Non-root user matching typical host UID
 RUN addgroup -g 1000 laravel \
     && adduser -u 1000 -G laravel -s /bin/bash -D laravel
 

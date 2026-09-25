@@ -417,7 +417,7 @@ if (is_dir($htmlDir)) {
     </main>
 
     <footer>
-        <p>LaraDoc Starter &copy; <?= date('Y') ?>. Powered by Docker Alpine and Nginx.</p>
+        <p>LaraDoc Starter &copy; <?= date('Y') ?>. Powered by FrankenPHP and Caddy.</p>
     </footer>
 
 </body>

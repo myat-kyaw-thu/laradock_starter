@@ -1,0 +1,10 @@
+http://__PROJECT_NAME__.localhost {
+    root * /var/www/html/__PROJECT_NAME__/public
+    encode zstd br gzip
+
+    log {
+        output file /var/log/frankenphp/__PROJECT_NAME__-access.log
+    }
+
+    php_server
+}

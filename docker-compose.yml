@@ -2,44 +2,36 @@ name: laradoc-starter
 
 services:
 
-  # ── PHP 8.4-FPM ───────────────────────────────────────────────
-  php:
+  frankenphp:
     build:
-      context: ./docker/php
+      context: ./docker/frankenphp
       dockerfile: Dockerfile
-    container_name: laravel_php
+      args:
+        PHP_VERSION: ${PHP_VERSION:-8.4}
+    container_name: laravel_frankenphp
     restart: unless-stopped
     working_dir: /var/www/html
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
     volumes:
-      - ./src:/var/www/html                          # all projects live here
-      - ./docker/nginx/dashboard:/var/www/dashboard # local dashboard
+      - ./src:/var/www/html
+      - ./docker/frankenphp/dashboard:/var/www/dashboard
+      - ./docker/frankenphp/Caddyfile:/etc/frankenphp/Caddyfile:ro
+      - ./docker/frankenphp/conf.d:/etc/frankenphp/Caddyfile.d
+      - caddy_data:/data
+      - caddy_config:/config
       - composer_cache:/home/laravel/.composer
     environment:
       - APP_ENV=local
+      - SERVER_NAME=:80
     networks:
       - laravel
     depends_on:
       mysql:
         condition: service_healthy
 
-  # ── Nginx ─────────────────────────────────────────────────────
-  nginx:
-    image: nginx:1.27-alpine
-    container_name: laravel_nginx
-    restart: unless-stopped
-    ports:
-      - "80:80"          # catch-all and domain routing
-      - "443:443"        # ssl (optional future extension)
-    volumes:
-      - ./src:/var/www/html
-      - ./docker/nginx/dashboard:/var/www/dashboard
-      - ./docker/nginx/conf.d:/etc/nginx/conf.d      # only conf.d/ loaded — template stays outside
-    networks:
-      - laravel
-    depends_on:
-      - php
-
-  # ── MySQL 8.0 ─────────────────────────────────────────────────
   mysql:
     image: mysql:8.0
     container_name: laravel_mysql
@@ -60,12 +52,10 @@ services:
       retries: 5
       start_period: 30s
 
-  # ── phpMyAdmin ────────────────────────────────────────────────
   phpmyadmin:
     image: phpmyadmin:5.2
     container_name: laravel_phpmyadmin
     restart: unless-stopped
-    # Ports removed: phpMyAdmin is now proxied via http://phpmyadmin.localhost
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
@@ -78,7 +68,6 @@ services:
       mysql:
         condition: service_healthy
 
-  # ── Redis ─────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: laravel_redis
@@ -92,21 +81,17 @@ services:
     profiles:
       - extras
 
-  # ── Mailpit ───────────────────────────────────────────────────
   mailpit:
     image: axllent/mailpit:v1.21
     container_name: laravel_mailpit
     restart: unless-stopped
     ports:
-      - "1025:1025" # Keep SMTP port open for local CLI mailers
-    # Port 8025 removed: Mailpit web UI is now proxied via http://mailpit.localhost
+      - "1025:1025"
     networks:
       - laravel
     profiles:
       - extras
 
-  # ── Composer (one-off runner) ─────────────────────────────────
-  # No container_name — avoids conflict when run multiple times
   composer:
     image: composer:2.8
     working_dir: /var/www/html
@@ -119,7 +104,6 @@ services:
     networks:
       - laravel
 
-  # ── Node / Vite (frontend — optional profile) ─────────────────
   node:
     image: node:22-alpine
     container_name: laravel_node
@@ -129,7 +113,7 @@ services:
       - ./src:/var/www/html
       - node_modules:/var/www/html/node_modules
     ports:
-      - "5173-5183:5173-5183" # Support multiple Vite instances on a port range
+      - "5173-5183:5173-5183"
     environment:
       - VITE_HOST=0.0.0.0
     command: sh -c "[ -d node_modules ] || npm install && npm run dev"
@@ -138,14 +122,14 @@ services:
     profiles:
       - frontend
 
-# ── Networks ──────────────────────────────────────────────────────
 networks:
   laravel:
     driver: bridge
 
-# ── Volumes ───────────────────────────────────────────────────────
 volumes:
   mysql_data:
   redis_data:
   composer_cache:
   node_modules:
+  caddy_data:
+  caddy_config:

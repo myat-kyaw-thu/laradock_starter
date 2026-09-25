@@ -1,0 +1,16 @@
+:80 {
+    root * /var/www/dashboard
+    encode zstd br gzip
+    php_server
+}
+
+http://phpmyadmin.localhost {
+    reverse_proxy phpmyadmin:80
+}
+
+http://mailpit.localhost {
+    reverse_proxy mailpit:8025 {
+        header_up Upgrade {http.request.header.Upgrade}
+        header_up Connection {http.request.header.Connection}
+    }
+}
