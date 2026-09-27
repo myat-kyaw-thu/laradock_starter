@@ -71,5 +71,11 @@ echo   Dashboard   --^>  http://localhost
 echo   phpMyAdmin  --^>  http://phpmyadmin.localhost
 echo   Mailpit     --^>  http://mailpit.localhost  (docker compose --profile extras up -d)
 echo.
+echo   LaraDoc CLI:
+echo     laradoc artisan migrate
+echo     laradoc composer install
+echo     laradoc shell
+echo     laradoc help  (see all commands)
+echo.
 pause
 endlocal

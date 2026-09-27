@@ -1,0 +1,92 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "LaraDoc: Open Shell",
+      "type": "shell",
+      "command": "./laradoc shell",
+      "windows": {
+        "command": "laradoc.bat shell"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "focus": true
+      },
+      "problemMatcher": [],
+      "group": "none"
+    },
+    {
+      "label": "LaraDoc: Run Migrations",
+      "type": "shell",
+      "command": "./laradoc artisan migrate",
+      "windows": {
+        "command": "laradoc.bat artisan migrate"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": [],
+      "group": "none"
+    },
+    {
+      "label": "LaraDoc: Fresh Migrate + Seed",
+      "type": "shell",
+      "command": "./laradoc artisan migrate:fresh --seed",
+      "windows": {
+        "command": "laradoc.bat artisan migrate:fresh --seed"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": [],
+      "group": "none"
+    },
+    {
+      "label": "LaraDoc: Composer Install",
+      "type": "shell",
+      "command": "./laradoc composer install",
+      "windows": {
+        "command": "laradoc.bat composer install"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": [],
+      "group": "none"
+    },
+    {
+      "label": "LaraDoc: Tail Logs",
+      "type": "shell",
+      "command": "./laradoc logs",
+      "windows": {
+        "command": "laradoc.bat logs"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true
+      },
+      "problemMatcher": [],
+      "isBackground": true,
+      "group": "none"
+    },
+    {
+      "label": "LaraDoc: Container Status",
+      "type": "shell",
+      "command": "./laradoc ps",
+      "windows": {
+        "command": "laradoc.bat ps"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": [],
+      "group": "none"
+    }
+  ]
+}

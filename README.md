@@ -85,6 +85,64 @@ Visit **http://my-app.localhost** — your app is live.
 
 ---
 
+## 🖥️ LaraDoc CLI
+
+Once your environment is running, use the `laradoc` CLI instead of typing `docker compose exec ...`:
+
+```bash
+# Mac / Linux
+./laradoc artisan migrate
+./laradoc composer require spatie/laravel-permission
+./laradoc tinker
+./laradoc shell
+
+# Windows (CMD or PowerShell)
+laradoc artisan migrate
+laradoc composer require spatie/laravel-permission
+laradoc tinker
+laradoc shell
+```
+
+### Smart Project Detection
+
+The CLI auto-detects which project you're working on:
+
+| Scenario | What happens |
+|---|---|
+| **Inside** `src/my-app/` | Auto-detects `my-app` — just run commands |
+| **Root** with 1 project | Auto-selects the only project |
+| **Root** with multiple | Specify: `./laradoc artisan blog migrate` or get a menu |
+
+### Command Reference
+
+| Command | Shortcut | Description |
+|---|---|---|
+| `laradoc artisan [args]` | `a` | Run any Artisan command |
+| `laradoc composer [args]` | `c` | Run Composer |
+| `laradoc php [args]` | | Run raw PHP |
+| `laradoc tinker` | `ti` | Start Laravel Tinker REPL |
+| `laradoc test [args]` | `t` | Run `php artisan test` |
+| `laradoc shell [project]` | `sh` | Open bash inside the container |
+| `laradoc mysql [project]` | `db` | Open MySQL CLI for a project |
+| `laradoc npm [args]` | | Run npm commands |
+| `laradoc add <name> [flags]` | | Add a new project |
+| `laradoc up` | | Start containers |
+| `laradoc down` | | Stop containers |
+| `laradoc logs [service]` | | Tail container logs |
+| `laradoc ps` | | Show container status |
+| `laradoc build` | | Rebuild FrankenPHP image locally |
+
+### Global Access (Optional)
+
+To use `laradoc` from anywhere on your system:
+
+```bash
+# Mac / Linux — create a symlink
+sudo ln -sf "$(pwd)/laradoc" /usr/local/bin/laradoc
+```
+
+---
+
 ## 🌐 Local Domains & Services
 
 All projects and tools run on **port 80** via subdomains. Browsers resolve `*.localhost` to `127.0.0.1` natively — no hosts file edits, no admin rights required.
@@ -201,7 +259,13 @@ laradock-starter/
 │   │   └── project.caddyfile.template  # Template for new project configs
 │   └── mysql/
 │       └── my.cnf                      # MySQL configuration
+├── .github/
+│   └── workflows/
+│       └── docker-publish.yml          # Multi-arch image CI/CD
 ├── src/                                # All Laravel projects live here
+├── laradoc                             # CLI for Mac / Linux
+├── laradoc.bat                         # CLI for Windows (CMD)
+├── laradoc.ps1                         # CLI for Windows (PowerShell)
 ├── docker-compose.yml
 ├── setup.bat / setup.sh                # First-time environment setup
 ├── add-project.bat / add-project.sh    # Add a Laravel project

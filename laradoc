@@ -1,0 +1,252 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+CYAN='\033[0;36m'; BOLD='\033[1m'; DIM='\033[2m'; RESET='\033[0m'
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+LARADOC_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+
+if [[ ! -f "$LARADOC_DIR/docker-compose.yml" ]]; then
+  echo -e "${RED}✖ docker-compose.yml not found in $LARADOC_DIR${RESET}" >&2
+  exit 1
+fi
+
+if docker compose version &>/dev/null 2>&1; then
+  DC=(docker compose --project-directory "$LARADOC_DIR")
+elif command -v docker-compose &>/dev/null; then
+  DC=(docker-compose --project-directory "$LARADOC_DIR")
+else
+  echo -e "${RED}✖ Docker Compose not found. Install Docker Desktop first.${RESET}" >&2
+  echo -e "  ${CYAN}https://www.docker.com/products/docker-desktop${RESET}" >&2
+  exit 1
+fi
+
+EXEC_FLAGS=""
+if [ ! -t 0 ] || [ ! -t 1 ]; then
+  EXEC_FLAGS="-T"
+fi
+
+PROJECT=""
+ARGS_SHIFT=0
+
+resolve_project() {
+  local cmd_args=("${@}")
+  ARGS_SHIFT=0
+  PROJECT=""
+
+  local cwd="$PWD"
+  local src_dir="$LARADOC_DIR/src/"
+  if [[ "$cwd/" == "$src_dir"* && "$cwd" != "${src_dir%/}" ]]; then
+    local remainder="${cwd#$src_dir}"
+    local name="${remainder%%/*}"
+    if [[ -n "$name" && -d "$LARADOC_DIR/src/$name" ]]; then
+      PROJECT="$name"
+      return 0
+    fi
+  fi
+
+  if [[ ${#cmd_args[@]} -gt 0 && -d "$LARADOC_DIR/src/${cmd_args[0]}" ]]; then
+    PROJECT="${cmd_args[0]}"
+    ARGS_SHIFT=1
+    return 0
+  fi
+
+  local projects=()
+  if [[ -d "$LARADOC_DIR/src" ]]; then
+    local dir
+    for dir in "$LARADOC_DIR/src"/*/; do
+      [[ -d "$dir" ]] || continue
+      local base
+      base="$(basename "$dir")"
+      [[ "$base" == .* || "$base" == "*" ]] && continue
+      projects+=("$base")
+    done
+  fi
+
+  if [[ ${#projects[@]} -eq 0 ]]; then
+    echo -e "${RED}✖ No projects found in src/.${RESET}" >&2
+    echo -e "  ${CYAN}Add one with:  bash add-project.sh my-app${RESET}" >&2
+    return 1
+  fi
+
+  if [[ ${#projects[@]} -eq 1 ]]; then
+    PROJECT="${projects[0]}"
+    return 0
+  fi
+
+  if [ ! -t 0 ] || [ ! -t 1 ]; then
+    echo -e "${RED}✖ Multiple projects found. Specify the project name:${RESET}" >&2
+    local p
+    for p in "${projects[@]}"; do
+      echo -e "  ${CYAN}$p${RESET}" >&2
+    done
+    return 1
+  fi
+
+  echo -e "\n${BOLD}Select a project:${RESET}" >&2
+  local i
+  for i in "${!projects[@]}"; do
+    echo -e "  ${CYAN}$((i+1)))${RESET} ${projects[$i]}" >&2
+  done
+  echo "" >&2
+  local choice
+  read -rp "Choose [1-${#projects[@]}]: " choice
+  if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#projects[@]} )); then
+    PROJECT="${projects[$((choice-1))]}"
+    return 0
+  else
+    echo -e "${RED}✖ Invalid selection.${RESET}" >&2
+    return 1
+  fi
+}
+
+show_help() {
+  echo -e ""
+  echo -e "  ${BOLD}LaraDoc CLI${RESET} — Run Laravel commands inside Docker"
+  echo -e ""
+  echo -e "  ${BOLD}Usage:${RESET}"
+  echo -e "    ${CYAN}laradoc${RESET} <command> [project] [arguments...]"
+  echo -e ""
+  echo -e "  ${BOLD}Laravel Commands:${RESET}"
+  echo -e "    ${GREEN}artisan${RESET}  [args]       Run php artisan"
+  echo -e "    ${GREEN}composer${RESET} [args]       Run composer"
+  echo -e "    ${GREEN}php${RESET}      [args]       Run raw php"
+  echo -e "    ${GREEN}tinker${RESET}               Start Laravel Tinker REPL"
+  echo -e "    ${GREEN}test${RESET}     [args]       Run php artisan test"
+  echo -e ""
+  echo -e "  ${BOLD}Environment:${RESET}"
+  echo -e "    ${GREEN}shell${RESET}    [project]    Open bash inside project container"
+  echo -e "    ${GREEN}mysql${RESET}    [project]    Open MySQL CLI for project database"
+  echo -e "    ${GREEN}npm${RESET}      [args]       Run npm in project"
+  echo -e ""
+  echo -e "  ${BOLD}Docker:${RESET}"
+  echo -e "    ${GREEN}add${RESET}      <name> [flags]  Add a new Laravel project"
+  echo -e "    ${GREEN}up${RESET}                       Start containers"
+  echo -e "    ${GREEN}down${RESET}                     Stop containers"
+  echo -e "    ${GREEN}logs${RESET}     [service]       Tail container logs"
+  echo -e "    ${GREEN}ps${RESET}                       Show container status"
+  echo -e "    ${GREEN}build${RESET}                    Rebuild FrankenPHP image locally"
+  echo -e ""
+  echo -e "  ${BOLD}Shortcuts:${RESET}"
+  echo -e "    ${DIM}a${RESET} = artisan   ${DIM}c${RESET} = composer   ${DIM}t${RESET} = test"
+  echo -e "    ${DIM}ti${RESET} = tinker   ${DIM}sh${RESET} = shell     ${DIM}db${RESET} = mysql"
+  echo -e ""
+  echo -e "  ${DIM}Project is auto-detected from your current directory.${RESET}"
+  echo -e "  ${DIM}If multiple projects exist, you'll be prompted to choose.${RESET}"
+  echo -e ""
+}
+
+COMMAND="${1:-help}"
+shift 2>/dev/null || true
+
+case "$COMMAND" in
+  artisan|a)
+    resolve_project "$@" || exit 1
+    shift $ARGS_SHIFT 2>/dev/null || true
+    "${DC[@]}" exec $EXEC_FLAGS -w "/var/www/html/$PROJECT" frankenphp php artisan "$@"
+    ;;
+
+  composer|c)
+    resolve_project "$@" || exit 1
+    shift $ARGS_SHIFT 2>/dev/null || true
+    "${DC[@]}" exec $EXEC_FLAGS -w "/var/www/html/$PROJECT" frankenphp composer "$@"
+    ;;
+
+  php)
+    resolve_project "$@" || exit 1
+    shift $ARGS_SHIFT 2>/dev/null || true
+    "${DC[@]}" exec $EXEC_FLAGS -w "/var/www/html/$PROJECT" frankenphp php "$@"
+    ;;
+
+  tinker|ti)
+    resolve_project "$@" || exit 1
+    "${DC[@]}" exec -w "/var/www/html/$PROJECT" frankenphp php artisan tinker
+    ;;
+
+  test|t)
+    resolve_project "$@" || exit 1
+    shift $ARGS_SHIFT 2>/dev/null || true
+    "${DC[@]}" exec $EXEC_FLAGS -w "/var/www/html/$PROJECT" frankenphp php artisan test "$@"
+    ;;
+
+  shell|sh)
+    resolve_project "$@" || exit 1
+    echo -e "${GREEN}Entering ${BOLD}$PROJECT${RESET}${GREEN} shell...${RESET}"
+    "${DC[@]}" exec -w "/var/www/html/$PROJECT" frankenphp bash
+    ;;
+
+  mysql|db)
+    resolve_project "$@" || exit 1
+    echo -e "${GREEN}Connecting to MySQL database: ${BOLD}$PROJECT${RESET}"
+    "${DC[@]}" exec mysql mysql -u root -prootsecret "$PROJECT"
+    ;;
+
+  npm)
+    resolve_project "$@" || exit 1
+    shift $ARGS_SHIFT 2>/dev/null || true
+    if "${DC[@]}" exec node true 2>/dev/null; then
+      "${DC[@]}" exec $EXEC_FLAGS -w "/var/www/html/$PROJECT" node npm "$@"
+    else
+      echo -e "${YELLOW}⚠ Node container not running. Trying frankenphp...${RESET}" >&2
+      if "${DC[@]}" exec $EXEC_FLAGS -w "/var/www/html/$PROJECT" frankenphp npm "$@" 2>/dev/null; then
+        :
+      else
+        echo -e "${RED}✖ npm not available. Start the node container:${RESET}" >&2
+        echo -e "  ${CYAN}docker compose --profile frontend up -d${RESET}" >&2
+        exit 1
+      fi
+    fi
+    ;;
+
+  add)
+    if [[ "$(uname -s)" == MINGW* || "$(uname -s)" == MSYS* ]]; then
+      cmd //c "$LARADOC_DIR/add-project.bat" "$@"
+    else
+      bash "$LARADOC_DIR/add-project.sh" "$@"
+    fi
+    ;;
+
+  up)
+    "${DC[@]}" up -d --remove-orphans "$@"
+    echo -e "${GREEN}✔ Containers started.${RESET}"
+    ;;
+
+  down)
+    "${DC[@]}" down "$@"
+    echo -e "${GREEN}✔ Containers stopped.${RESET}"
+    ;;
+
+  logs)
+    "${DC[@]}" logs -f "$@"
+    ;;
+
+  ps|status)
+    "${DC[@]}" ps "$@"
+    ;;
+
+  build)
+    "${DC[@]}" build --no-cache "$@"
+    echo -e "${GREEN}✔ Build complete.${RESET}"
+    ;;
+
+  reload)
+    "${DC[@]}" exec frankenphp frankenphp reload
+    echo -e "${GREEN}✔ FrankenPHP reloaded.${RESET}"
+    ;;
+
+  help|--help|-h)
+    show_help
+    ;;
+
+  *)
+    echo -e "${RED}✖ Unknown command: $COMMAND${RESET}" >&2
+    show_help
+    exit 1
+    ;;
+esac
