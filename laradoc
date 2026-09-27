@@ -236,7 +236,7 @@ case "$COMMAND" in
     ;;
 
   reload)
-    "${DC[@]}" exec frankenphp frankenphp reload
+    "${DC[@]}" exec frankenphp frankenphp reload --config /etc/frankenphp/Caddyfile
     echo -e "${GREEN}✔ FrankenPHP reloaded.${RESET}"
     ;;
 

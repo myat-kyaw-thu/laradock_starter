@@ -1,0 +1,5 @@
+http://Filament_CMS_Pannel_Starter_Kits.localhost, http://filament_cms_pannel_starter_kits.localhost {
+    root * /var/www/html/Filament_CMS_Pannel_Starter_Kits/public
+    encode zstd br gzip
+    php_server
+}

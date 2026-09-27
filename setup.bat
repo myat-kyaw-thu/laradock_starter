@@ -59,6 +59,8 @@ pause & exit /b 1
 :mysql_ready
 echo [OK] MySQL is ready.
 
+powershell -NoProfile -Command "$d = '%~dp0'.TrimEnd('\'); $u = [Environment]::GetEnvironmentVariable('Path', 'User'); if ($u -split ';' -notcontains $d) { [Environment]::SetEnvironmentVariable('Path', $u + ';' + $d, 'User'); Write-Host '[OK] Added LaraDoc CLI to User PATH.' }"
+
 echo.
 echo   ==========================================
 echo    Environment is up and running!

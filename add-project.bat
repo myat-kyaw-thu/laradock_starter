@@ -57,6 +57,13 @@ if "%CLONE_MODE%"=="true" (
   echo [OK] Fresh Laravel project created in src\%PROJECT%
 )
 
+if not exist "src\%PROJECT%\laradoc.bat" (
+  (echo @echo off & echo call "%%~dp0..\..\laradoc.bat" %%*) > "src\%PROJECT%\laradoc.bat"
+)
+if not exist "src\%PROJECT%\laradoc.ps1" (
+  (echo ^& "$PSScriptRoot\..\..\laradoc.ps1" @args) > "src\%PROJECT%\laradoc.ps1"
+)
+
 echo.
 echo [2/7] Creating Caddyfile site config...
 set CONF=docker\frankenphp\conf.d\%PROJECT%.caddyfile
@@ -126,7 +133,7 @@ if not exist "src\%PROJECT%\vite.config.js" (
 
 echo.
 echo [7/7] Reloading FrankenPHP...
-%DC% exec frankenphp frankenphp reload
+%DC% exec frankenphp frankenphp reload --config /etc/frankenphp/Caddyfile
 if %ERRORLEVEL% neq 0 ( echo [WARN] FrankenPHP reload failed. ) else ( echo [OK] FrankenPHP reloaded. )
 
 echo.

@@ -4,7 +4,7 @@
 
 # LaraDoc Starter
 
-A lightweight, multi-project Docker local environment for Laravel. Run multiple fully isolated Laravel projects simultaneously on **port 80** using local subdomains — powered by a single shared container stack.
+A lightweight, multi-project Docker local development environment for Laravel. Run multiple fully isolated Laravel projects simultaneously on **port 80** using local subdomains — powered by a single shared container stack.
 
 No port conflicts, no heavy virtual machines, no complex DNS routing, no Nginx, no PHP-FPM.
 
@@ -12,16 +12,16 @@ No port conflicts, no heavy virtual machines, no complex DNS routing, no Nginx, 
 
 ## 🛠️ Stack
 
-| Service | Version |
-|---|---|
-| **FrankenPHP** | 1 / PHP 8.4 (Alpine) |
-| **MySQL** | 8.0 |
-| **Redis** | 7 (Alpine) — optional |
-| **phpMyAdmin** | 5.2 |
-| **Mailpit** | v1.21 — optional |
-| **Node / Vite** | 22 (Alpine) — optional |
+| Service | Version | Description |
+|---|---|---|
+| **FrankenPHP** | 1 / PHP 8.4 (Alpine) | Caddy + PHP in a single high-performance binary |
+| **MySQL** | 8.0 | Dedicated database per project |
+| **phpMyAdmin** | 5.2 | Web GUI for database management |
+| **Redis** | 7 (Alpine) — optional | High-performance in-memory cache / queue |
+| **Mailpit** | v1.21 — optional | Local email capture and testing |
+| **Node / Vite** | 22 (Alpine) — optional | Dedicated frontend container for asset bundling |
 
-> FrankenPHP embeds Caddy + PHP into a single binary. It replaces both Nginx and PHP-FPM — no FastCGI, one container instead of two.
+> FrankenPHP embeds Caddy and PHP into a single binary. It replaces both Nginx and PHP-FPM — zero FastCGI overhead, one container instead of two.
 
 ---
 
@@ -35,24 +35,26 @@ No port conflicts, no heavy virtual machines, no complex DNS routing, no Nginx, 
 # Windows
 setup.bat
 
-# Mac / Linux
+# macOS / Linux
 bash setup.sh
 ```
 
-This builds the FrankenPHP image and starts MySQL + phpMyAdmin. Once running, visit **http://localhost** to see your developer dashboard.
+This downloads the prebuilt FrankenPHP image (takes ~15–20s) and starts MySQL + phpMyAdmin. It also automatically registers the `laradoc` CLI into your user PATH.
+
+Once started, open **http://localhost** to view your developer dashboard.
 
 ---
 
 ### Step 2 — Add a project
 
-All projects live inside the `src/` folder. Pick the scenario that fits:
+All projects live inside the `src/` folder. Pick your scenario:
 
 #### Scenario A — Fresh Laravel project
 ```bash
 # Windows
 add-project.bat my-app
 
-# Mac / Linux
+# macOS / Linux
 bash add-project.sh my-app
 ```
 
@@ -61,42 +63,38 @@ bash add-project.sh my-app
 # Windows
 add-project.bat my-app --clone https://github.com/you/repo.git
 
-# Mac / Linux
+# macOS / Linux
 bash add-project.sh my-app --clone https://github.com/you/repo.git
 ```
 
-#### Scenario C — Existing folder already in `src/`
+#### Scenario C — Existing project folder already in `src/`
 ```bash
 # Windows
 add-project.bat my-app --existing
 
-# Mac / Linux
+# macOS / Linux
 bash add-project.sh my-app --existing
 ```
 
-**That's it.** The script handles everything:
-- Creates the Caddy site config (`my-app.localhost` routing)
-- Creates a MySQL database + dedicated user with a random password
-- Generates `src/my-app/.env` with correct DB host, credentials, Redis isolation
-- Runs `composer install`, `key:generate`, `migrate`
-- Reloads FrankenPHP
+**What the script does automatically:**
+- Configures Caddy subdomain routing (`http://my-app.localhost`)
+- Creates a dedicated MySQL database + user with secure credentials
+- Generates `src/my-app/.env` preconfigured with Docker networking
+- Installs Composer dependencies and generates `APP_KEY`
+- Runs database migrations
+- Places a local `laradoc` CLI shortcut inside `src/my-app/`
+- Reloads FrankenPHP with zero downtime
 
-Visit **http://my-app.localhost** — your app is live.
+Your app is instantly live at **http://my-app.localhost**.
 
 ---
 
 ## 🖥️ LaraDoc CLI
 
-Once your environment is running, use the `laradoc` CLI instead of typing `docker compose exec ...`:
+Use the built-in `laradoc` CLI from anywhere — no need to type long Docker commands:
 
 ```bash
-# Mac / Linux
-./laradoc artisan migrate
-./laradoc composer require spatie/laravel-permission
-./laradoc tinker
-./laradoc shell
-
-# Windows (CMD or PowerShell)
+# Run from repository root or inside any src/<project>/ folder:
 laradoc artisan migrate
 laradoc composer require spatie/laravel-permission
 laradoc tinker
@@ -105,187 +103,89 @@ laradoc shell
 
 ### Smart Project Detection
 
-The CLI auto-detects which project you're working on:
+`laradoc` automatically knows which project you want:
 
-| Scenario | What happens |
+| Where you run it | Behavior |
 |---|---|
-| **Inside** `src/my-app/` | Auto-detects `my-app` — just run commands |
-| **Root** with 1 project | Auto-selects the only project |
-| **Root** with multiple | Specify: `./laradoc artisan blog migrate` or get a menu |
+| **Inside** `src/my-app/` | Auto-detects `my-app` — run commands directly |
+| **Root** with 1 project | Auto-selects that project |
+| **Root** with multiple projects | Specify project (`laradoc artisan blog migrate`) or pick from an interactive menu |
 
 ### Command Reference
 
 | Command | Shortcut | Description |
 |---|---|---|
 | `laradoc artisan [args]` | `a` | Run any Artisan command |
-| `laradoc composer [args]` | `c` | Run Composer |
-| `laradoc php [args]` | | Run raw PHP |
+| `laradoc composer [args]` | `c` | Run Composer inside project |
+| `laradoc php [args]` | | Run raw PHP inside project |
 | `laradoc tinker` | `ti` | Start Laravel Tinker REPL |
 | `laradoc test [args]` | `t` | Run `php artisan test` |
-| `laradoc shell [project]` | `sh` | Open bash inside the container |
-| `laradoc mysql [project]` | `db` | Open MySQL CLI for a project |
+| `laradoc shell [project]` | `sh` | Open bash terminal inside project container |
+| `laradoc mysql [project]` | `db` | Open MySQL CLI connected directly to project DB |
 | `laradoc npm [args]` | | Run npm commands |
 | `laradoc add <name> [flags]` | | Add a new project |
 | `laradoc up` | | Start containers |
 | `laradoc down` | | Stop containers |
-| `laradoc logs [service]` | | Tail container logs |
+| `laradoc logs [service]` | | Stream container logs |
 | `laradoc ps` | | Show container status |
 | `laradoc build` | | Rebuild FrankenPHP image locally |
-
-### Global Access (Optional)
-
-To use `laradoc` from anywhere on your system:
-
-```bash
-# Mac / Linux — create a symlink
-sudo ln -sf "$(pwd)/laradoc" /usr/local/bin/laradoc
-```
+| `laradoc reload` | | Hot-reload FrankenPHP configuration |
 
 ---
 
 ## 🌐 Local Domains & Services
 
-All projects and tools run on **port 80** via subdomains. Browsers resolve `*.localhost` to `127.0.0.1` natively — no hosts file edits, no admin rights required.
+All projects and tools run on **port 80** using local `.localhost` subdomains. Browsers resolve `*.localhost` to `127.0.0.1` natively without any hosts file edits.
 
-| Service | URL |
-|---|---|
-| **Developer Dashboard** | http://localhost |
-| **Your projects** | `http://[folder-name].localhost` |
-| **phpMyAdmin** | http://phpmyadmin.localhost |
-| **Mailpit inbox** | http://mailpit.localhost |
-| **Mailpit SMTP** | `localhost:1025` |
-| **MySQL** | `localhost:3306` |
-| **Redis** | `localhost:6379` |
-| **Vite HMR** | `http://[folder-name].localhost:[5173-5183]` |
+| Service | URL | Notes |
+|---|---|---|
+| **Developer Dashboard** | http://localhost | Project list, status & quick links |
+| **Your Projects** | `http://[folder-name].localhost` | Zero-configuration routing |
+| **phpMyAdmin** | http://phpmyadmin.localhost | User: `root`, Password: `rootsecret` |
+| **Mailpit Web UI** | http://mailpit.localhost | Optional (`docker compose --profile extras up -d`) |
+| **Mailpit SMTP** | `localhost:1025` | Port for local email sending |
+| **MySQL** | `localhost:3306` | External port for GUI tools (TablePlus, DBeaver) |
+| **Redis** | `localhost:6379` | Optional cache/queue backend |
+| **Vite HMR** | `http://[folder-name].localhost:[5173+]` | Auto-assigned isolated HMR ports |
 
 ---
 
-## ⚙️ Common Commands
+## ⌨️ VS Code Integration
 
-### Manage containers
+Pre-configured tasks are included in `.vscode/tasks.json`. Press `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows) → **Tasks: Run Task**:
 
-```bash
-# Start essential services (FrankenPHP, MySQL, phpMyAdmin)
-docker compose up -d
-
-# Start all services including Redis and Mailpit
-docker compose --profile extras up -d
-
-# Start with Vite / Node frontend
-docker compose --profile frontend up -d
-
-# Stop everything
-docker compose down
-
-# Rebuild FrankenPHP image (after Dockerfile changes)
-docker compose build --no-cache
-
-# View logs
-docker compose logs -f
-docker compose logs -f frankenphp
-docker compose logs -f mysql
-
-# Container status
-docker compose ps
-```
-
-### Shell into the container
-
-```bash
-docker compose exec frankenphp bash
-```
-
-Once inside, `cd` into your project and run artisan / composer as normal:
-
-```bash
-cd my-app
-php artisan migrate
-php artisan tinker
-php artisan queue:work
-composer require some/package
-```
-
-### Run commands without entering the shell
-
-```bash
-# Artisan
-docker compose exec frankenphp sh -c "cd /var/www/html/my-app && php artisan migrate"
-docker compose exec frankenphp sh -c "cd /var/www/html/my-app && php artisan migrate:fresh --seed"
-docker compose exec frankenphp sh -c "cd /var/www/html/my-app && php artisan db:seed"
-
-# Composer
-docker compose exec frankenphp sh -c "cd /var/www/html/my-app && composer install"
-docker compose exec frankenphp sh -c "cd /var/www/html/my-app && composer update"
-
-# MySQL shell
-docker compose exec mysql mysql -u root -prootsecret
-
-# Redis CLI
-docker compose exec redis redis-cli
-```
-
-### Reload FrankenPHP after config changes
-
-```bash
-docker compose exec frankenphp frankenphp reload
-```
+- **LaraDoc: Start Environment (`laradoc up`)**
+- **LaraDoc: Stop Environment (`laradoc down`)**
+- **LaraDoc: Run Artisan Command**
+- **LaraDoc: Open Project Shell**
+- **LaraDoc: View Container Status (`laradoc ps`)**
+- **LaraDoc: Reload FrankenPHP**
 
 ---
 
 ## 🔒 Isolation Features
 
-Each project gets its own fully sandboxed environment:
+Each project runs in complete isolation:
 
-1. **MySQL isolation** — dedicated database user and random password per project. Root credentials are never used by apps.
-2. **Redis isolation** — unique `REDIS_DB` index and `REDIS_PREFIX` / `CACHE_PREFIX` per project. No session or cache bleed between projects.
-3. **Vite port isolation** — each project gets its own HMR port (auto-incremented from 5173).
-
----
-
-## 🗂️ Project Structure
-
-```
-laradock-starter/
-├── docker/
-│   ├── frankenphp/
-│   │   ├── Dockerfile                  # FrankenPHP image
-│   │   ├── php.ini                     # PHP configuration
-│   │   ├── Caddyfile                   # Main Caddy config
-│   │   ├── conf.d/
-│   │   │   ├── default.caddyfile       # Dashboard + phpMyAdmin + Mailpit
-│   │   │   └── *.caddyfile             # Auto-generated per project
-│   │   ├── dashboard/
-│   │   │   └── index.php               # Developer dashboard
-│   │   └── project.caddyfile.template  # Template for new project configs
-│   └── mysql/
-│       └── my.cnf                      # MySQL configuration
-├── .github/
-│   └── workflows/
-│       └── docker-publish.yml          # Multi-arch image CI/CD
-├── src/                                # All Laravel projects live here
-├── laradoc                             # CLI for Mac / Linux
-├── laradoc.bat                         # CLI for Windows (CMD)
-├── laradoc.ps1                         # CLI for Windows (PowerShell)
-├── docker-compose.yml
-├── setup.bat / setup.sh                # First-time environment setup
-├── add-project.bat / add-project.sh    # Add a Laravel project
-└── .env.docker.example                 # Base .env template
-```
+1. **Database Isolation** — Unique database and non-root MySQL user per project.
+2. **Cache & Session Isolation** — Projects default to Laravel's standard `database` driver. When using Redis, unique `REDIS_DB` index and prefixes prevent data bleeding.
+3. **Vite Port Isolation** — Each project receives its own dedicated HMR port (incremented from 5173).
+4. **Filesystem Isolation** — Projects are separated in `src/<project-name>` directories.
 
 ---
 
 ## 🔧 Optional Services
 
-Redis and Mailpit are off by default to keep the environment lean. Start them when needed:
+Redis and Mailpit are disabled by default to keep the footprint lean:
 
 ```bash
-# Redis only
+# Start Redis
 docker compose up -d redis
 
-# Mailpit only
+# Start Mailpit
 docker compose up -d mailpit
 
-# Both at once
+# Start all extra services
 docker compose --profile extras up -d
 ```
 
@@ -293,36 +193,58 @@ docker compose --profile extras up -d
 
 ## 🐘 Switching PHP Version
 
-The environment supports **PHP 8.2** and **PHP 8.4**. Default is 8.4.
+The stack supports **PHP 8.2** and **PHP 8.4** (default: 8.4).
 
-1. Copy the example env file if you haven't already:
-   ```bash
-   cp .env.docker.example .env.docker
-   ```
-
-2. Edit `.env.docker` and set your version:
-   ```bash
+1. In `.env.docker` (or create from `.env.docker.example`):
+   ```env
    PHP_VERSION=8.2   # or 8.4
    ```
 
-3. Rebuild the FrankenPHP image:
+2. Restart containers:
    ```bash
-   docker compose build --no-cache
-   docker compose up -d
+   ./laradoc build
+   ./laradoc up
    ```
 
-That's it. All projects in `src/` run on the selected version.
+---
+
+## 🗂️ Project Structure
+
+```
+laradock-starter/
+├── .vscode/
+│   └── tasks.json                      # VS Code task shortcuts
+├── docker/
+│   ├── frankenphp/
+│   │   ├── Dockerfile                  # Multi-arch FrankenPHP image
+│   │   ├── php.ini                     # Custom PHP configuration
+│   │   ├── Caddyfile                   # Main Caddy server config
+│   │   ├── conf.d/                     # Auto-generated project site configs
+│   │   │   └── default.caddyfile       # Dashboard + service routing
+│   │   └── dashboard/
+│   │       └── index.php               # Local development dashboard
+│   └── mysql/
+│       └── my.cnf                      # MySQL configuration
+├── src/                                # All Laravel projects live here
+├── laradoc                             # CLI wrapper (macOS / Linux)
+├── laradoc.bat                         # CLI wrapper (Windows CMD)
+├── laradoc.ps1                         # CLI wrapper (Windows PowerShell)
+├── docker-compose.yml                  # Main service stack definition
+├── setup.bat / setup.sh                # Automated setup scripts
+├── add-project.bat / add-project.sh    # Automated project onboarding
+└── .env.docker.example                 # Default environment template
+```
 
 ---
 
 ## ♻️ Fresh Reset
 
-Wipe all volumes and start completely clean:
+Wipe all containers, volumes, and databases to start completely clean:
 
 ```bash
 # Windows
 setup.bat --fresh
 
-# Mac / Linux
+# macOS / Linux
 bash setup.sh --fresh
 ```

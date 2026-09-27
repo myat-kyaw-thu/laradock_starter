@@ -2,7 +2,7 @@
 set -euo pipefail
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
-CYAN='\033[0;36m'; BOLD='\033[1m'; RESET='\033[0m'
+CYAN='\033[0;36m'; BOLD='\033[1m'; DIM='\033[2m'; RESET='\033[0m'
 
 step()  { echo -e "\n${CYAN}${BOLD}▶ $1${RESET}"; }
 ok()    { echo -e "${GREEN}✔ $1${RESET}"; }
@@ -57,6 +57,25 @@ echo ""
 ok "MySQL is ready."
 
 echo ""
+CLI_INSTALLED=false
+for BIN_DIR in "$HOME/.local/bin" "/opt/homebrew/bin" "/usr/local/bin"; do
+  if [[ -d "$BIN_DIR" && -w "$BIN_DIR" ]]; then
+    ln -sf "$(pwd)/laradoc" "$BIN_DIR/laradoc"
+    CLI_INSTALLED=true
+    ok "LaraDoc CLI installed to $BIN_DIR/laradoc"
+    break
+  fi
+done
+
+if [[ "$CLI_INSTALLED" == false ]]; then
+  mkdir -p "$HOME/.local/bin" 2>/dev/null || true
+  if [[ -w "$HOME/.local/bin" ]]; then
+    ln -sf "$(pwd)/laradoc" "$HOME/.local/bin/laradoc"
+    ok "LaraDoc CLI installed to $HOME/.local/bin/laradoc"
+    CLI_INSTALLED=true
+  fi
+fi
+
 echo -e "${GREEN}${BOLD}╔══════════════════════════════════════════════╗${RESET}"
 echo -e "${GREEN}${BOLD}║  ✔  Environment is up and running!           ║${RESET}"
 echo -e "${GREEN}${BOLD}╚══════════════════════════════════════════════╝${RESET}"
@@ -69,11 +88,8 @@ echo -e "  phpMyAdmin  →  ${CYAN}http://phpmyadmin.localhost${RESET}"
 echo -e "  Mailpit     →  ${CYAN}http://mailpit.localhost${RESET}  (docker compose --profile extras up -d)"
 echo ""
 echo -e "  ${BOLD}LaraDoc CLI:${RESET}"
-echo -e "    ${CYAN}./laradoc artisan migrate${RESET}"
-echo -e "    ${CYAN}./laradoc composer install${RESET}"
-echo -e "    ${CYAN}./laradoc shell${RESET}"
-echo -e "    ${CYAN}./laradoc help${RESET}  (see all commands)"
-echo ""
-echo -e "  ${YELLOW}Tip:${RESET} To use ${CYAN}laradoc${RESET} from anywhere:"
-echo -e "    ${DIM}sudo ln -sf \"\$(pwd)/laradoc\" /usr/local/bin/laradoc${RESET}"
+echo -e "    ${CYAN}laradoc artisan migrate${RESET}"
+echo -e "    ${CYAN}laradoc composer install${RESET}"
+echo -e "    ${CYAN}laradoc shell${RESET}"
+echo -e "    ${CYAN}laradoc help${RESET}  (see all commands)"
 echo ""

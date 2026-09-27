@@ -170,7 +170,7 @@ switch ($Command.ToLower()) {
     }
 
     "reload" {
-        & $DC[0] $DC[1..($DC.Count-1)] exec frankenphp frankenphp reload
+        & $DC[0] $DC[1..($DC.Count-1)] exec frankenphp frankenphp reload --config /etc/frankenphp/Caddyfile
         Write-Host "[OK] FrankenPHP reloaded." -ForegroundColor Green
     }
 

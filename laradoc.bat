@@ -141,7 +141,7 @@ echo [OK] Build complete.
 goto :eof
 
 :cmd_reload
-%DC% exec frankenphp frankenphp reload
+%DC% exec frankenphp frankenphp reload --config /etc/frankenphp/Caddyfile
 echo [OK] FrankenPHP reloaded.
 goto :eof
 

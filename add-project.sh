@@ -60,6 +60,8 @@ else
   ok "Fresh Laravel project created in src/${PROJECT}/"
 fi
 
+ln -sf "../../laradoc" "src/${PROJECT}/laradoc" 2>/dev/null || true
+
 step "2/8" "Creating Caddyfile site config"
 
 CONF="docker/frankenphp/conf.d/${PROJECT}.caddyfile"
@@ -145,7 +147,7 @@ fi
 
 step "8/8" "Reloading FrankenPHP"
 
-$DC exec frankenphp frankenphp reload \
+$DC exec frankenphp frankenphp reload --config /etc/frankenphp/Caddyfile \
   && ok "FrankenPHP reloaded." \
   || warn "FrankenPHP reload failed."
 
