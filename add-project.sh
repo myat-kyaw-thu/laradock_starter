@@ -47,7 +47,7 @@ $DC ps --services 2>/dev/null | grep -q "frankenphp" || error "Containers not ru
 
 step "1/8" "Setting up project files"
 
-if [[ "$EXISTING_MODE" == true ]]; then
+if [[ "$EXISTING_MODE" == true ]] || [[ -d "src/${PROJECT}" && "$CLONE_MODE" == false ]]; then
   [[ -d "src/${PROJECT}" ]] || error "src/${PROJECT}/ not found. Copy your project there first."
   ok "Using existing project at src/${PROJECT}/"
 elif [[ "$CLONE_MODE" == true ]]; then
@@ -56,7 +56,6 @@ elif [[ "$CLONE_MODE" == true ]]; then
   git clone "$CLONE_URL" "src/${PROJECT}"
   ok "Cloned into src/${PROJECT}/"
 else
-  [[ -d "src/${PROJECT}" ]] && error "src/${PROJECT}/ already exists. Use --existing or choose a different name."
   $DC exec frankenphp composer create-project laravel/laravel "${PROJECT}"
   ok "Fresh Laravel project created in src/${PROJECT}/"
 fi
@@ -82,7 +81,9 @@ $DC exec mysql mysql -u root -prootsecret \
 
 step "4/8" "Setting up .env"
 
-if [[ ! -f "src/${PROJECT}/.env" ]]; then
+if [[ -f "src/${PROJECT}/.env" ]]; then
+  ok "Existing .env detected — skipping .env generation to preserve your settings."
+else
   [[ -f ".env.docker" ]] && cp .env.docker "src/${PROJECT}/.env" || cp .env.docker.example "src/${PROJECT}/.env"
 
   sed -i.bak \
@@ -105,8 +106,6 @@ if [[ ! -f "src/${PROJECT}/.env" ]]; then
   fi
   rm -f "src/${PROJECT}/.env.bak"
   ok "Created src/${PROJECT}/.env"
-else
-  warn "src/${PROJECT}/.env already exists — skipping."
 fi
 
 step "5/8" "Fixing permissions"
@@ -126,7 +125,13 @@ fi
 
 step "7/8" "Running Laravel setup tasks"
 
-$DC exec frankenphp sh -c "cd /var/www/html/${PROJECT} && php artisan key:generate --force"
+if ! grep -q "^APP_KEY=base64:" "src/${PROJECT}/.env" 2>/dev/null; then
+  $DC exec frankenphp sh -c "cd /var/www/html/${PROJECT} && php artisan key:generate --force"
+  ok "Application key generated."
+else
+  ok "Existing APP_KEY preserved."
+fi
+
 $DC exec frankenphp sh -c "cd /var/www/html/${PROJECT} && php artisan migrate --force" \
   && ok "Migrations complete." \
   || warn "Migrations failed. Check src/${PROJECT}/.env DB settings."

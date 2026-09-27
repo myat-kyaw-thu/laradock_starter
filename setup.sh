@@ -36,10 +36,14 @@ if [[ "$FRESH" == true ]]; then
   ok "Wiped."
 fi
 
-step "Building images and starting containers"
+step "Pulling images and starting containers"
 for C in laravel_frankenphp laravel_mysql laravel_redis laravel_phpmyadmin laravel_mailpit; do
   docker rm -f "$C" &>/dev/null || true
 done
+
+# Try pulling pre-built images first (pulls in ~20s; falls back to local build if unavailable)
+$DC pull --ignore-buildable-pull-failures 2>/dev/null || true
+
 $DC up -d --remove-orphans
 ok "Containers started."
 

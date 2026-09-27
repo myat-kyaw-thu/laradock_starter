@@ -4,7 +4,7 @@ FROM dunglas/frankenphp:1-php${PHP_VERSION}-alpine
 RUN apk add --no-cache bash curl git unzip zip
 
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
-RUN install-php-extensions gd pdo_mysql mbstring exif pcntl bcmath zip intl xml opcache redis
+RUN install-php-extensions gd pdo_mysql exif pcntl bcmath zip intl redis
 
 COPY --from=composer:2.8 /usr/bin/composer /usr/bin/composer
 

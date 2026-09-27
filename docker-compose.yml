@@ -3,6 +3,7 @@ name: laradoc-starter
 services:
 
   frankenphp:
+    image: ${FRANKENPHP_IMAGE:-ghcr.io/myat-kyaw-thu/laradoc-frankenphp:${PHP_VERSION:-8.4}}
     build:
       context: ./docker/frankenphp
       dockerfile: Dockerfile

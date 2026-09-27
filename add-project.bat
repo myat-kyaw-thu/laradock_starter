@@ -33,8 +33,11 @@ if %ERRORLEVEL% neq 0 (
 )
 
 if exist "src\%PROJECT%\" (
-  if not "%EXISTING_MODE%"=="true" (
-    echo [ERROR] src\%PROJECT%\ already exists. Use --existing or choose a different name.
+  if not "%CLONE_MODE%"=="true" (
+    set EXISTING_MODE=true
+    echo [OK] Existing project detected at src\%PROJECT%\
+  ) else (
+    echo [ERROR] src\%PROJECT%\ already exists. Choose a different name.
     pause & exit /b 1
   )
 )
@@ -72,7 +75,7 @@ echo.
 echo [4/7] Setting up .env...
 
 if exist "src\%PROJECT%\.env" (
-  echo [SKIP] .env already exists -- skipping.
+  echo [SKIP] src\%PROJECT%\.env already exists -- skipping .env generation to preserve your settings.
   goto env_done
 )
 
@@ -105,9 +108,15 @@ if not exist "src\%PROJECT%\vendor\" (
 )
 
 echo.
-echo [6/7] Generating app key and running migrations...
-%DC% exec frankenphp sh -c "cd /var/www/html/%PROJECT% && php artisan key:generate --force && php artisan migrate --force"
-if %ERRORLEVEL% neq 0 ( echo [WARN] Migrations failed. ) else ( echo [OK] App key generated and migrations complete. )
+findstr /C:"APP_KEY=base64:" "src\%PROJECT%\.env" >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+  %DC% exec frankenphp sh -c "cd /var/www/html/%PROJECT% && php artisan key:generate --force"
+  echo [OK] App key generated.
+) else (
+  echo [OK] Existing APP_KEY preserved.
+)
+%DC% exec frankenphp sh -c "cd /var/www/html/%PROJECT% && php artisan migrate --force"
+if %ERRORLEVEL% neq 0 ( echo [WARN] Migrations failed. Check src\%PROJECT%\.env DB settings. ) else ( echo [OK] Migrations complete. )
 
 if not exist "src\%PROJECT%\vite.config.js" (
   copy "docker\vite.config.js" "src\%PROJECT%\vite.config.js" >nul

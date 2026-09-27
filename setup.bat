@@ -36,8 +36,9 @@ echo [2/4] Skipping wipe (use --fresh to start clean).
 :after_fresh
 
 echo.
-echo [3/4] Building images and starting containers...
+echo [3/4] Pulling pre-built images and starting containers...
 for %%C in (laravel_frankenphp laravel_mysql laravel_redis laravel_phpmyadmin laravel_mailpit) do docker rm -f %%C >nul 2>&1
+%DC% pull --ignore-buildable-pull-failures >nul 2>&1
 %DC% up -d --remove-orphans
 if %ERRORLEVEL% neq 0 ( echo [ERROR] Failed to start containers. & pause & exit /b 1 )
 echo [OK] Containers started.
