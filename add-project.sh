@@ -83,7 +83,7 @@ $DC exec mysql mysql -u root -prootsecret \
 
 step "4/8" "Setting up .env"
 
-if [[ -f "src/${PROJECT}/.env" ]]; then
+if [[ "$EXISTING_MODE" == true && -f "src/${PROJECT}/.env" ]]; then
   ok "Existing .env detected — skipping .env generation to preserve your settings."
 else
   [[ -f ".env.docker" ]] && cp .env.docker "src/${PROJECT}/.env" || cp .env.docker.example "src/${PROJECT}/.env"

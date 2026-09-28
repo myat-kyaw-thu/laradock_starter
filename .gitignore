@@ -2,6 +2,11 @@
 src/
 !src/.gitkeep
 
+# Auto-generated project Caddy configs (keep default.caddyfile and .gitkeep)
+docker/frankenphp/conf.d/*.caddyfile
+!docker/frankenphp/conf.d/default.caddyfile
+!docker/frankenphp/conf.d/.gitkeep
+
 # Real env files — never commit these
 .env
 .env.docker

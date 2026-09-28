@@ -81,8 +81,8 @@ if %ERRORLEVEL% neq 0 ( echo [WARN] Could not create database/user. ) else ( ech
 echo.
 echo [4/7] Setting up .env...
 
-if exist "src\%PROJECT%\.env" (
-  echo [SKIP] src\%PROJECT%\.env already exists -- skipping .env generation to preserve your settings.
+if "%EXISTING_MODE%"=="true" if exist "src\%PROJECT%\.env" (
+  echo [SKIP] Existing .env detected -- skipping .env generation to preserve your settings.
   goto env_done
 )
 

@@ -13,7 +13,8 @@ if (is_dir($htmlDir)) {
         $projectInfo = [
             'name' => ucfirst($slug),
             'url' => "http://{$slug}.localhost",
-            'db' => 'N/A',
+            'domain' => "{$slug}.localhost",
+            'db' => $slug,
             'laravel_ver' => 'Unknown',
             'has_env' => false
         ];
@@ -21,16 +22,23 @@ if (is_dir($htmlDir)) {
         if (file_exists($envPath)) {
             $projectInfo['has_env'] = true;
             $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            $parsedDb = '';
             foreach ($lines as $line) {
                 if (strpos(trim($line), '#') === 0) continue;
                 $parts = explode('=', $line, 2);
                 if (count($parts) === 2) {
                     $key = trim($parts[0]);
                     $val = trim(trim($parts[1]), '"\'');
-                    if ($key === 'APP_NAME') $projectInfo['name'] = $val;
-                    if ($key === 'APP_URL') $projectInfo['url'] = $val;
-                    if ($key === 'DB_DATABASE') $projectInfo['db'] = $val;
+                    if ($key === 'APP_NAME' && !empty($val) && strtolower($val) !== 'laravel') {
+                        $projectInfo['name'] = $val;
+                    }
+                    if ($key === 'DB_DATABASE' && !empty($val)) {
+                        $parsedDb = $val;
+                    }
                 }
+            }
+            if (!empty($parsedDb)) {
+                $projectInfo['db'] = $parsedDb;
             }
         }
         
@@ -394,7 +402,7 @@ if (is_dir($htmlDir)) {
                             <div class="metadata-list">
                                 <div class="metadata-item">
                                     <span class="metadata-label">Local Domain</span>
-                                    <span class="metadata-value" style="color: var(--accent);"><?= htmlspecialchars(str_replace('http://', '', $project['url'])) ?></span>
+                                    <span class="metadata-value" style="color: var(--accent);"><?= htmlspecialchars($project['domain']) ?></span>
                                 </div>
                                 <div class="metadata-item">
                                     <span class="metadata-label">Database Schema</span>
