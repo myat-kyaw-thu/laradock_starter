@@ -59,7 +59,8 @@ pause & exit /b 1
 :mysql_ready
 echo [OK] MySQL is ready.
 
-powershell -NoProfile -Command "$d = '%~dp0'.TrimEnd('\'); $u = [Environment]::GetEnvironmentVariable('Path', 'User'); if ($u -split ';' -notcontains $d) { [Environment]::SetEnvironmentVariable('Path', $u + ';' + $d, 'User'); Write-Host '[OK] Added LaraDoc CLI to User PATH.' }"
+powershell -NoProfile -Command "$d = '%~dp0'.TrimEnd('\'); $u = [Environment]::GetEnvironmentVariable('Path', 'User'); if ([string]::IsNullOrEmpty($u)) { [Environment]::SetEnvironmentVariable('Path', $d, 'User'); Write-Host '[OK] Added LaraDoc CLI to User PATH.' } elseif ($u -split ';' -notcontains $d) { [Environment]::SetEnvironmentVariable('Path', $u + ';' + $d, 'User'); Write-Host '[OK] Added LaraDoc CLI to User PATH.' }"
+set "PATH=%PATH%;%~dp0"
 
 echo.
 echo   ==========================================
@@ -71,7 +72,7 @@ echo     add-project.bat my-app
 echo.
 echo   Dashboard   --^>  http://localhost
 echo   phpMyAdmin  --^>  http://phpmyadmin.localhost
-echo   Mailpit     --^>  http://mailpit.localhost  (docker compose --profile extras up -d)
+echo   Mailpit     --^>  http://mailpit.localhost
 echo.
 echo   LaraDoc CLI:
 echo     laradoc artisan migrate

@@ -120,11 +120,28 @@ goto :eof
 :cmd_up
 %DC% up -d --remove-orphans %2 %3 %4 %5
 echo [OK] Containers started.
+echo.
+echo   Environment URLs:
+echo     Dashboard   --^> http://localhost
+echo     phpMyAdmin  --^> http://phpmyadmin.localhost
+echo     Mailpit     --^> http://mailpit.localhost
+if exist "%LARADOC_DIR%\src\" (
+  set HAS_PROJECTS=false
+  for /d %%D in ("%LARADOC_DIR%\src\*") do (
+    if "!HAS_PROJECTS!"=="false" (
+      echo.
+      echo   Active Projects:
+      set HAS_PROJECTS=true
+    )
+    echo     %%~nxD --^> http://%%~nxD.localhost
+  )
+)
+echo.
 goto :eof
 
 :cmd_down
-%DC% down %2 %3 %4 %5
-echo [OK] Containers stopped.
+%DC% --profile "*" down --remove-orphans %2 %3 %4 %5
+echo [OK] All containers stopped.
 goto :eof
 
 :cmd_logs

@@ -57,10 +57,13 @@ echo ""
 ok "MySQL is ready."
 
 echo ""
+LARADOC_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+chmod +x "$LARADOC_ROOT/laradoc" "$LARADOC_ROOT/add-project.sh" 2>/dev/null || true
+
 CLI_INSTALLED=false
 for BIN_DIR in "$HOME/.local/bin" "/opt/homebrew/bin" "/usr/local/bin"; do
   if [[ -d "$BIN_DIR" && -w "$BIN_DIR" ]]; then
-    ln -sf "$(pwd)/laradoc" "$BIN_DIR/laradoc"
+    ln -sf "$LARADOC_ROOT/laradoc" "$BIN_DIR/laradoc"
     CLI_INSTALLED=true
     ok "LaraDoc CLI installed to $BIN_DIR/laradoc"
     break
@@ -70,7 +73,7 @@ done
 if [[ "$CLI_INSTALLED" == false ]]; then
   mkdir -p "$HOME/.local/bin" 2>/dev/null || true
   if [[ -w "$HOME/.local/bin" ]]; then
-    ln -sf "$(pwd)/laradoc" "$HOME/.local/bin/laradoc"
+    ln -sf "$LARADOC_ROOT/laradoc" "$HOME/.local/bin/laradoc"
     ok "LaraDoc CLI installed to $HOME/.local/bin/laradoc"
     CLI_INSTALLED=true
   fi
@@ -85,7 +88,7 @@ echo -e "    ${CYAN}bash add-project.sh my-app${RESET}"
 echo ""
 echo -e "  Dashboard   →  ${CYAN}http://localhost${RESET}"
 echo -e "  phpMyAdmin  →  ${CYAN}http://phpmyadmin.localhost${RESET}"
-echo -e "  Mailpit     →  ${CYAN}http://mailpit.localhost${RESET}  (docker compose --profile extras up -d)"
+echo -e "  Mailpit     →  ${CYAN}http://mailpit.localhost${RESET}"
 echo ""
 echo -e "  ${BOLD}LaraDoc CLI:${RESET}"
 echo -e "    ${CYAN}laradoc artisan migrate${RESET}"

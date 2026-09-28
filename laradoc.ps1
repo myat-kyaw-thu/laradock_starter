@@ -149,11 +149,28 @@ switch ($Command.ToLower()) {
     "up" {
         & $DC[0] $DC[1..($DC.Count-1)] up -d --remove-orphans @Arguments
         Write-Host "[OK] Containers started." -ForegroundColor Green
+        Write-Host ""
+        Write-Host "  Environment URLs:" -ForegroundColor White
+        Write-Host "    Dashboard   → http://localhost" -ForegroundColor Cyan
+        Write-Host "    phpMyAdmin  → http://phpmyadmin.localhost" -ForegroundColor Cyan
+        Write-Host "    Mailpit     → http://mailpit.localhost" -ForegroundColor Cyan
+        $srcDir = Join-Path $LaradocDir "src"
+        if (Test-Path $srcDir) {
+            $projects = Get-ChildItem -Path $srcDir -Directory | Where-Object { $_.Name -notlike ".*" }
+            if ($projects.Count -gt 0) {
+                Write-Host ""
+                Write-Host "  Active Projects:" -ForegroundColor White
+                foreach ($p in $projects) {
+                    Write-Host "    $($p.Name) → http://$($p.Name).localhost" -ForegroundColor Cyan
+                }
+            }
+        }
+        Write-Host ""
     }
 
     "down" {
-        & $DC[0] $DC[1..($DC.Count-1)] down @Arguments
-        Write-Host "[OK] Containers stopped." -ForegroundColor Green
+        & $DC[0] $DC[1..($DC.Count-1)] --profile "*" down --remove-orphans @Arguments
+        Write-Host "[OK] All containers stopped." -ForegroundColor Green
     }
 
     "logs" {

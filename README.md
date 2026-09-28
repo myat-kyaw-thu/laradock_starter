@@ -18,7 +18,7 @@ No port conflicts, no heavy virtual machines, no complex DNS routing, no Nginx, 
 | **MySQL** | 8.0 | Dedicated database per project |
 | **phpMyAdmin** | 5.2 | Web GUI for database management |
 | **Redis** | 7 (Alpine) — optional | High-performance in-memory cache / queue |
-| **Mailpit** | v1.21 — optional | Local email capture and testing |
+| **Mailpit** | v1.21 | Local email capture and testing |
 | **Node / Vite** | 22 (Alpine) — optional | Dedicated frontend container for asset bundling |
 
 > FrankenPHP embeds Caddy and PHP into a single binary. It replaces both Nginx and PHP-FPM — zero FastCGI overhead, one container instead of two.
@@ -142,7 +142,7 @@ All projects and tools run on **port 80** using local `.localhost` subdomains. B
 | **Developer Dashboard** | http://localhost | Project list, status & quick links |
 | **Your Projects** | `http://[folder-name].localhost` | Zero-configuration routing |
 | **phpMyAdmin** | http://phpmyadmin.localhost | User: `root`, Password: `rootsecret` |
-| **Mailpit Web UI** | http://mailpit.localhost | Optional (`docker compose --profile extras up -d`) |
+| **Mailpit Web UI** | http://mailpit.localhost | Local email inbox for testing |
 | **Mailpit SMTP** | `localhost:1025` | Port for local email sending |
 | **MySQL** | `localhost:3306` | External port for GUI tools (TablePlus, DBeaver) |
 | **Redis** | `localhost:6379` | Optional cache/queue backend |
@@ -176,17 +176,14 @@ Each project runs in complete isolation:
 
 ## 🔧 Optional Services
 
-Redis and Mailpit are disabled by default to keep the footprint lean:
+Redis and the dedicated Node/Vite container are disabled by default to keep the footprint lean:
 
 ```bash
-# Start Redis
+# Start Redis (in-memory cache/queues)
 docker compose up -d redis
 
-# Start Mailpit
-docker compose up -d mailpit
-
-# Start all extra services
-docker compose --profile extras up -d
+# Start Frontend Node container (npm/vite inside Docker)
+docker compose --profile frontend up -d
 ```
 
 ---

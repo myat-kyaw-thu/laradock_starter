@@ -90,8 +90,6 @@ services:
       - "1025:1025"
     networks:
       - laravel
-    profiles:
-      - extras
 
   composer:
     image: composer:2.8

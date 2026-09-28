@@ -215,11 +215,33 @@ case "$COMMAND" in
   up)
     "${DC[@]}" up -d --remove-orphans "$@"
     echo -e "${GREEN}✔ Containers started.${RESET}"
+    echo ""
+    echo -e "  ${BOLD}Environment URLs:${RESET}"
+    echo -e "    Dashboard   →  ${CYAN}http://localhost${RESET}"
+    echo -e "    phpMyAdmin  →  ${CYAN}http://phpmyadmin.localhost${RESET}"
+    echo -e "    Mailpit     →  ${CYAN}http://mailpit.localhost${RESET}"
+    if [[ -d "$LARADOC_DIR/src" ]]; then
+      local p_found=false
+      local dir
+      for dir in "$LARADOC_DIR/src"/*/; do
+        [[ -d "$dir" ]] || continue
+        local b
+        b="$(basename "$dir")"
+        [[ "$b" == .* || "$b" == "*" ]] && continue
+        if [[ "$p_found" == false ]]; then
+          echo ""
+          echo -e "  ${BOLD}Active Projects:${RESET}"
+          p_found=true
+        fi
+        echo -e "    $b  →  ${CYAN}http://${b}.localhost${RESET}"
+      done
+    fi
+    echo ""
     ;;
 
   down)
-    "${DC[@]}" down "$@"
-    echo -e "${GREEN}✔ Containers stopped.${RESET}"
+    "${DC[@]}" --profile "*" down --remove-orphans "$@"
+    echo -e "${GREEN}✔ All containers stopped.${RESET}"
     ;;
 
   logs)
