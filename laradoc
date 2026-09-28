@@ -221,8 +221,7 @@ case "$COMMAND" in
     echo -e "    phpMyAdmin  →  ${CYAN}http://phpmyadmin.localhost${RESET}"
     echo -e "    Mailpit     →  ${CYAN}http://mailpit.localhost${RESET}"
     if [[ -d "$LARADOC_DIR/src" ]]; then
-      local p_found=false
-      local dir
+      p_found=false
       for dir in "$LARADOC_DIR/src"/*/; do
         [[ -d "$dir" ]] || continue
         local b
